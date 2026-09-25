@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet as RNStyleSheet } from 'react-native-web';
+import { View, TouchableOpacity, Image, StyleSheet as RNStyleSheet } from 'react-native-web';
 import Link from 'next/link';
 import { User } from 'lucide-react';
 import { ProfileModal } from './ProfileModal';
@@ -25,20 +25,14 @@ export const MobileHeader: React.FC = () => {
             </View>
           </Link>
 
-          {/* Right: Farmer Profile Button */}
+          {/* Right: ONLY Profile Logo/Icon (No name, no text) */}
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => setProfileOpen(true)}
-            style={styles.profileButton}
+            style={styles.profileIconButton}
             accessibilityLabel="Open Farmer Profile"
           >
-            <View style={styles.profileAvatar}>
-              <User size={16} color="#ffffff" />
-            </View>
-            <View style={styles.profileMeta}>
-              <Text style={styles.profileName}>Ramesh</Text>
-              <Text style={styles.profileSub}>Profile & Settings</Text>
-            </View>
+            <User size={20} color="#047857" />
           </TouchableOpacity>
         </View>
       </View>
@@ -81,43 +75,19 @@ const styles = RNStyleSheet.create({
     width: 140,
     height: 40,
   },
-  profileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  profileIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#ecfdf5',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#a7f3d0',
-    borderRadius: 24,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    shadowColor: '#064e3b',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  profileAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#047857',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  profileMeta: {
-    flexDirection: 'column',
-  },
-  profileName: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#064e3b',
-    lineHeight: 14,
-  },
-  profileSub: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#047857',
-    lineHeight: 11,
+    shadowColor: '#064e3b',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
 });
