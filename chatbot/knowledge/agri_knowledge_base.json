@@ -1,0 +1,45 @@
+{
+  "msp_rates_2026": {
+    "wheat": {
+      "rate_per_quintal": 2275,
+      "currency": "INR",
+      "standards": "Fair Average Quality (FAQ), max moisture 12%"
+    },
+    "onion": {
+      "rate_per_quintal_range": [2250, 2600],
+      "currency": "INR",
+      "standards": "Graded red onion, cured, dry skins"
+    },
+    "soybean": {
+      "rate_per_quintal": 4892,
+      "currency": "INR",
+      "standards": "Max moisture 10%, admixture < 2%"
+    },
+    "gram": {
+      "rate_per_quintal": 5440,
+      "currency": "INR",
+      "standards": "Cleaned, sound grains"
+    },
+    "cotton": {
+      "rate_per_quintal": 7121,
+      "currency": "INR",
+      "standards": "Medium staple"
+    }
+  },
+  "required_documents": [
+    "Aadhaar Card of the registered farmer",
+    "Digital 7/12 Land Record (Satbara) & 8-A",
+    "Aadhaar-linked Bank Account Passbook Copy",
+    "MandiMitra Digital Token SMS or QR Pass",
+    "E-Pik Pahani (Sowing Certificate)"
+  ],
+  "procurement_process_steps": [
+    "1. Smart Slot Booking on MandiMitra",
+    "2. Receive Dynamic Departure Alert ('Depart at XX:XX')",
+    "3. Entry Gate QR Scan & Weighbridge Gross Weight",
+    "4. Moisture & Quality Assaying at Counter",
+    "5. Produce Unloading and Tare Weight Calculation",
+    "6. Digital Procurement Slip Issuance",
+    "7. Direct Benefit Transfer (DBT) to Bank Account in 24-48 hours"
+  ]
+}
