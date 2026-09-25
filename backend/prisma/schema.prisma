@@ -1,0 +1,448 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  FARMER
+  ADMIN
+  OPERATOR
+  CSC_OPERATOR
+}
+
+enum QueueStatus {
+  BOOKED
+  CHECKED_IN
+  WAITING
+  CALLED
+  PROCESSING
+  COMPLETED
+  SKIPPED
+  CANCELLED
+  NO_SHOW
+}
+
+enum ProcurementStatus {
+  PENDING
+  ARRIVED
+  UNDER_PROCESSING
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum CentreStatus {
+  ACTIVE
+  MAINTENANCE
+  OVERLOADED
+  CLOSED
+}
+
+enum DemandLevel {
+  LOW
+  MODERATE
+  HIGH
+  CRITICAL
+}
+
+enum TimeWindow {
+  MIN_15
+  MIN_30
+  MIN_60
+  SLOT
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
+enum NotificationChannel {
+  IN_APP
+  SMS
+  WHATSAPP
+  IVR
+}
+
+enum NotificationEvent {
+  BOOKING_CONFIRMED
+  TOKEN_GENERATED
+  QUEUE_APPROACHING
+  TURN_CALLED
+  SLOT_CHANGED
+  BOOKING_CANCELLED
+  PROCUREMENT_COMPLETED
+  PAYMENT_UPDATED
+}
+
+model User {
+  id           String          @id @default(uuid())
+  mobile       String          @unique
+  email        String?         @unique
+  passwordHash String?
+  role         Role            @default(FARMER)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  farmer       Farmer?
+  admin        Admin?
+  operator     CentreOperator?
+
+  @@index([mobile])
+  @@index([role])
+}
+
+model Farmer {
+  id                String         @id @default(uuid())
+  userId            String         @unique
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farmerId          String         @unique
+  fullName          String
+  mobile            String         @unique
+  village           String
+  taluka            String
+  district          String
+  state             String         @default("Maharashtra")
+  preferredLanguage String         @default("en")
+  defaultCrop       String         @default("Wheat")
+  defaultQuantity   Float          @default(50.0)
+  preferredCentreId String?
+  registrationStatus String        @default("VERIFIED")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  bookings          Booking[]
+  tokens            QueueToken[]
+  procurements      Procurement[]
+  payments          Payment[]
+  notifications     Notification[]
+  chatSessions      ChatSession[]
+
+  @@index([farmerId])
+  @@index([mobile])
+  @@index([district])
+}
+
+model Admin {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName    String
+  department  String   @default("Agricultural Marketing")
+  designation String   @default("District Procurement Officer")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Centre {
+  id                   String           @id @default(uuid())
+  code                 String           @unique
+  name                 String
+  address              String
+  latitude             Float
+  longitude            Float
+  district             String
+  taluka               String
+  state                String           @default("Maharashtra")
+  capacity             Int              @default(100)
+  activeCounters       Int              @default(4)
+  avgProcessingMinutes Float            @default(8.0)
+  openingTime          String           @default("08:00")
+  closingTime          String           @default("18:00")
+  status               CentreStatus     @default(ACTIVE)
+  supportedCrops       String[]         @default(["Wheat", "Onion", "Soybean", "Gram", "Paddy", "Cotton"])
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  operators            CentreOperator[]
+  slots                Slot[]
+  bookings             Booking[]
+  tokens               QueueToken[]
+  procurements         Procurement[]
+  demandMetrics        DemandMetric[]
+  alerts               Alert[]
+
+  @@index([code])
+  @@index([district])
+  @@index([status])
+}
+
+model CentreOperator {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  centreId      String
+  centre        Centre   @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  fullName      String
+  counterNumber Int      @default(1)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([centreId])
+}
+
+model Slot {
+  id              String      @id @default(uuid())
+  centreId        String
+  centre          Centre      @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  date            DateTime    @db.Date
+  startTime       String
+  endTime         String
+  maxCapacity     Int         @default(15)
+  currentBookings Int         @default(0)
+  bufferCapacity  Int         @default(3)
+  isBlocked       Boolean     @default(false)
+  timeWindow      TimeWindow  @default(SLOT)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  bookings        Booking[]
+
+  @@unique([centreId, date, startTime, endTime])
+  @@index([centreId, date])
+}
+
+model Booking {
+  id                   String        @id @default(uuid())
+  bookingNumber        String        @unique
+  farmerId             String
+  farmer               Farmer        @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  centreId             String
+  centre               Centre        @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  slotId               String
+  slot                 Slot          @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  date                 DateTime      @db.Date
+  startTime            String
+  endTime              String
+  crop                 String
+  quantity             Float
+  estimatedWaitMinutes Int           @default(30)
+  status               String        @default("CONFIRMED")
+  isAssisted           Boolean       @default(false)
+  assistedBy           String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  token                QueueToken?
+  procurement          Procurement?
+
+  @@index([farmerId])
+  @@index([centreId])
+  @@index([date])
+  @@index([bookingNumber])
+}
+
+model QueueToken {
+  id                    String        @id @default(uuid())
+  tokenNumber           String        @unique
+  prefix                String        @default("A")
+  sequenceNumber        Int
+  farmerId              String
+  farmer                Farmer        @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  centreId              String
+  centre                Centre        @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  bookingId             String?       @unique
+  booking               Booking?      @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  queuePosition         Int
+  appointmentDate       DateTime      @db.Date
+  appointmentTime       String
+  status                QueueStatus   @default(BOOKED)
+  counterNumber         Int?
+  isPriority            Boolean       @default(false)
+  priorityReason        String?
+  createdTime           DateTime      @default(now())
+  arrivalTime           DateTime?
+  callTime              DateTime?
+  processingStartTime   DateTime?
+  processingEndTime     DateTime?
+  departureRecommendedAt DateTime?
+  estimatedServiceTime  DateTime?
+  travelTimeMinutes     Int           @default(25)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  events                QueueEvent[]
+  procurement           Procurement?
+
+  @@index([tokenNumber])
+  @@index([centreId, appointmentDate, status])
+  @@index([farmerId])
+}
+
+model QueueEvent {
+  id             String       @id @default(uuid())
+  tokenId        String
+  token          QueueToken   @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  previousStatus QueueStatus?
+  newStatus      QueueStatus
+  eventType      String
+  notes          String?
+  actorId        String?
+  actorRole      String?
+  createdAt      DateTime     @default(now())
+
+  @@index([tokenId])
+}
+
+model Procurement {
+  id                   String            @id @default(uuid())
+  procurementNumber    String            @unique
+  farmerId             String
+  farmer               Farmer            @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  centreId             String
+  centre               Centre            @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  bookingId            String?           @unique
+  booking              Booking?          @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  tokenId              String?           @unique
+  token                QueueToken?       @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+  crop                 String
+  quantity             Float
+  grade                String            @default("Grade A")
+  moistureContent      Float             @default(11.5)
+  bagCount             Int               @default(25)
+  ratePerQuintal       Float             @default(2275.0)
+  totalAmount          Float             @default(56875.0)
+  status               ProcurementStatus @default(PENDING)
+  arrivalTime          DateTime?
+  processingStart      DateTime?
+  processingCompletion DateTime?
+  rejectionReason      String?
+  remarks              String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  payment              Payment?
+
+  @@index([procurementNumber])
+  @@index([farmerId])
+  @@index([centreId])
+  @@index([status])
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  paymentNumber     String        @unique
+  procurementId     String        @unique
+  procurement       Procurement   @relation(fields: [procurementId], references: [id], onDelete: Cascade)
+  farmerId          String
+  farmer            Farmer        @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  amount            Float
+  status            PaymentStatus @default(PROCESSING)
+  paymentMethod     String        @default("DBT_DIRECT_BENEFIT")
+  transactionRef    String?
+  bankAccountLast4  String        @default("4821")
+  ifscCode          String        @default("SBIN0001234")
+  initiatedAt       DateTime      @default(now())
+  completedAt       DateTime?
+  remarks           String?       @default("Direct Benefit Transfer (DBT) to registered Aadhaar-linked Bank Account")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([paymentNumber])
+  @@index([farmerId])
+  @@index([status])
+}
+
+model DemandMetric {
+  id                   String      @id @default(uuid())
+  centreId             String
+  centre               Centre      @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  date                 DateTime    @db.Date
+  timeWindow           TimeWindow
+  currentDemand        DemandLevel @default(MODERATE)
+  expectedDemand       DemandLevel @default(HIGH)
+  queuePressure        Float       @default(0.5)
+  capacityUtilization  Float       @default(0.6)
+  processingThroughput Float       @default(7.5)
+  slotPressure         Float       @default(0.65)
+  trend                String      @default("STABLE")
+  recommendedAction    String?
+  recordedAt           DateTime    @default(now())
+
+  @@index([centreId, date, timeWindow])
+}
+
+model Alert {
+  id              String   @id @default(uuid())
+  centreId        String?
+  centre          Centre?  @relation(fields: [centreId], references: [id], onDelete: SetNull)
+  title           String
+  message         String
+  severity        String   @default("WARNING")
+  alertType       String   @default("QUEUE_THRESHOLD")
+  suggestedAction String?
+  isResolved      Boolean  @default(false)
+  resolvedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([centreId])
+  @@index([isResolved])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actor     String
+  actorRole String
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([timestamp])
+}
+
+model Notification {
+  id        String              @id @default(uuid())
+  farmerId  String
+  farmer    Farmer              @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  eventType NotificationEvent
+  channel   NotificationChannel @default(IN_APP)
+  isRead    Boolean             @default(false)
+  status    String              @default("DELIVERED")
+  metadata  Json?
+  createdAt DateTime            @default(now())
+
+  @@index([farmerId, isRead])
+}
+
+model ChatSession {
+  id        String        @id @default(uuid())
+  farmerId  String?
+  farmer    Farmer?       @relation(fields: [farmerId], references: [id], onDelete: SetNull)
+  language  String        @default("en")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  messages  ChatMessage[]
+
+  @@index([farmerId])
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender    String
+  text      String
+  intent    String?
+  source    String?     @default("database")
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId])
+}
