@@ -89,6 +89,9 @@ function LoginContent() {
 
       if (res?.accessToken || res?.access_token) {
         const token = res.accessToken || res.access_token;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('mandimitra_active_token');
+        }
         localStorage.setItem('mandimitra_token', token);
         localStorage.setItem('mandimitra_user', JSON.stringify(res.user || res));
       }

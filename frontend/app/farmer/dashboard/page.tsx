@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native-web';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, ActivityIndicator } from 'react-native-web';
 import { useLanguage } from '../../../lib/language-context';
 import { fetchApi } from '../../../lib/api';
 import { TokenLiveTracker } from '../../../components/TokenLiveTracker';
@@ -15,6 +15,9 @@ import {
   RefreshCw,
   ShoppingBag,
   TrendingUp,
+  Clock,
+  CheckCircle2,
+  X,
 } from 'lucide-react';
 
 export default function FarmerDashboard() {
@@ -27,17 +30,54 @@ export default function FarmerDashboard() {
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Procurement Box & Quick Booking States
+  const [showProcurementBox, setShowProcurementBox] = useState<boolean>(false);
+  const [selectedCentreId, setSelectedCentreId] = useState<string>('');
+  const [selectedSlotTime, setSelectedSlotTime] = useState<string>('10:00 AM');
+  const [bookingCrop, setBookingCrop] = useState<string>('Wheat');
+  const [bookingQuantity, setBookingQuantity] = useState<string>('50');
+  const [bookingSubmitting, setBookingSubmitting] = useState<boolean>(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const procurementBoxRef = useRef<any>(null);
+
+  const availableSlotTimes = ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM', '04:00 PM'];
+
   const loadDashboardData = async () => {
     try {
       setRefreshing(true);
-      const farmerRes = await fetchApi('/farmers/MH-NAS-2026-0812');
-      setFarmer(farmerRes);
+      let uStr: any = null;
+      let userPhone = '';
+      if (typeof window !== 'undefined') {
+        try {
+          const s = localStorage.getItem('mandimitra_user');
+          if (s) {
+            uStr = JSON.parse(s);
+            userPhone = uStr.phone || uStr.mobile || '';
+            setCurrentUser(uStr);
+          }
+        } catch {}
+      }
 
-      const activeTok = await fetchApi(`/queue/farmer/${farmerRes.id}/active`);
+      const farmerId = uStr?.farmerId || (userPhone === '9209281432' ? 'MH-NAS-2026-9209' : 'MH-NAS-2026-0812');
+      const farmerRes = await fetchApi(`/farmers/${farmerId}`);
+      if (farmerRes) {
+        setFarmer(farmerRes);
+        if (farmerRes.defaultCrop) setBookingCrop(farmerRes.defaultCrop);
+        if (farmerRes.defaultQuantity) setBookingQuantity(String(farmerRes.defaultQuantity));
+      }
+
+      const activeTok = await fetchApi(`/queue/farmer/${farmerRes?.id || farmerId}/active`);
       setTokenData(activeTok);
+      if (activeTok && activeTok.token) {
+        setShowProcurementBox(true);
+      }
 
       const centresRes = await fetchApi('/centres?lat=20.1700&lng=74.0500');
-      setCentres(centresRes);
+      const centreList = Array.isArray(centresRes) ? centresRes : [];
+      setCentres(centreList);
+      if (centreList.length > 0) {
+        setSelectedCentreId((prev) => prev || centreList[0].id);
+      }
 
       const ordersRes = await fetchApi('/orders').catch(() => []);
       setRecentOrders(Array.isArray(ordersRes) ? ordersRes : []);
@@ -46,6 +86,36 @@ export default function FarmerDashboard() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const handleQuickBookSubmit = async () => {
+    const centreId = selectedCentreId || (centres.length > 0 ? centres[0].id : '1');
+    const selectedCentreObj = centres.find((c) => String(c.id) === String(centreId));
+    const centreName = selectedCentreObj?.name || 'Mandi Procurement Centre';
+
+    setBookingSubmitting(true);
+    setBookingError(null);
+
+    try {
+      const qVal = parseFloat(bookingQuantity) || 50;
+      await fetchApi('/bookings', {
+        method: 'POST',
+        body: JSON.stringify({
+          centreId,
+          centreName,
+          crop: bookingCrop,
+          quantity: qVal,
+          slotTime: selectedSlotTime,
+        }),
+      });
+
+      await loadDashboardData();
+      setShowProcurementBox(true);
+    } catch (err: any) {
+      setBookingError(err.message || 'Failed to book slot. Please try again.');
+    } finally {
+      setBookingSubmitting(false);
     }
   };
 
@@ -84,11 +154,17 @@ export default function FarmerDashboard() {
         .catch(() => {});
     };
 
+    const handleTokenSync = () => {
+      loadDashboardData();
+    };
+
     if (typeof window !== 'undefined') {
+      window.addEventListener('mandimitra_token_updated', handleTokenSync);
       window.addEventListener('mandimitra_orders_updated', handleOrderSync);
       window.addEventListener('mandimitra_centres_updated', handleCentresSync);
       window.addEventListener('mandimitra_profile_updated', handleProfileSync);
       window.addEventListener('storage', () => {
+        handleTokenSync();
         handleOrderSync();
         handleCentresSync();
         handleProfileSync();
@@ -97,6 +173,7 @@ export default function FarmerDashboard() {
 
     return () => {
       if (typeof window !== 'undefined') {
+        window.removeEventListener('mandimitra_token_updated', handleTokenSync);
         window.removeEventListener('mandimitra_orders_updated', handleOrderSync);
         window.removeEventListener('mandimitra_centres_updated', handleCentresSync);
         window.removeEventListener('mandimitra_profile_updated', handleProfileSync);
@@ -144,26 +221,169 @@ export default function FarmerDashboard() {
         </TouchableOpacity>
       </View>
 
-      {/* Main Token & Procurement Card */}
-      <View style={styles.sectionBlock}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <Wheat size={16} color="#047857" />
-            <Text style={styles.sectionTitle}>{t('your_procurement')}</Text>
-          </View>
-          <Text style={styles.syncText}>{t('live_queue_sync')}</Text>
-        </View>
+      {/* Main Token & Procurement Card - ONLY displayed when user clicks 'Book Slot' or has an active token */}
+      {(showProcurementBox || Boolean(tokenData?.token)) && (
+        <div ref={procurementBoxRef} style={{ display: 'contents' }}>
+          <View style={styles.sectionBlock}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Wheat size={16} color="#047857" />
+                <Text style={styles.sectionTitle}>{t('your_procurement')}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={styles.syncText}>{t('live_queue_sync')}</Text>
+                {!tokenData?.token && (
+                  <TouchableOpacity
+                    onPress={() => setShowProcurementBox(false)}
+                    style={styles.closeBoxBtn}
+                    accessibilityLabel={t('close')}
+                  >
+                    <X size={15} color="#065f46" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
 
-        <TokenLiveTracker
-          tokenData={tokenData}
-          onRefresh={loadDashboardData}
-          compact={false}
-        />
-      </View>
+            {tokenData?.token ? (
+              <TokenLiveTracker
+                tokenData={tokenData}
+                onRefresh={loadDashboardData}
+                compact={false}
+              />
+            ) : (
+              <View style={styles.quickBookBox}>
+                <View style={styles.quickBookHeader}>
+                  <View>
+                    <Text style={styles.quickBookTitle}>{t('book_procurement_slot') || 'Book Procurement Slot'}</Text>
+                    <Text style={styles.quickBookSub}>Guaranteed 30-min window at nearest mandi centre</Text>
+                  </View>
+                  <View style={styles.guaranteePill}>
+                    <Text style={styles.guaranteePillText}>Instant Pass</Text>
+                  </View>
+                </View>
+
+                {bookingError && (
+                  <View style={styles.quickBookError}>
+                    <Text style={styles.quickBookErrorText}>{bookingError}</Text>
+                  </View>
+                )}
+
+                {/* 1. Centre Selection */}
+                <View style={styles.qbFieldGroup}>
+                  <Text style={styles.qbFieldLabel}>{t('step_1_centre') || '1. Select Procurement Centre'}</Text>
+                  <View style={styles.qbSelectWrapper}>
+                    <select
+                      value={selectedCentreId}
+                      onChange={(e) => setSelectedCentreId(e.target.value)}
+                      style={htmlSelectStyle}
+                    >
+                      {centres.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.distanceKm || 3.5} km • {c.waitLevel || 'Low'} Wait)
+                        </option>
+                      ))}
+                    </select>
+                  </View>
+                </View>
+
+                {/* 2. Slot Window Selection */}
+                <View style={styles.qbFieldGroup}>
+                  <Text style={styles.qbFieldLabel}>{t('step_3_slot') || '2. Select Arrival Slot'}</Text>
+                  <View style={styles.slotsRow}>
+                    {availableSlotTimes.map((time) => {
+                      const isSelected = selectedSlotTime === time;
+                      return (
+                        <TouchableOpacity
+                          key={time}
+                          onPress={() => setSelectedSlotTime(time)}
+                          style={[styles.slotPill, isSelected && styles.slotPillActive]}
+                        >
+                          <Clock size={12} color={isSelected ? '#ffffff' : '#047857'} />
+                          <Text style={[styles.slotPillText, isSelected && styles.slotPillTextActive]}>
+                            {time}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                {/* 3. Crop & Quantity Row */}
+                <View style={styles.qbRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.qbFieldLabel}>Crop</Text>
+                    <View style={styles.qbSelectWrapper}>
+                      <select
+                        value={bookingCrop}
+                        onChange={(e) => setBookingCrop(e.target.value)}
+                        style={htmlSelectStyle}
+                      >
+                        <option value="Wheat">Wheat (MSP: ₹2,275/qtl)</option>
+                        <option value="Onion">Onion (Graded Red)</option>
+                        <option value="Soybean">Soybean (MSP: ₹4,892/qtl)</option>
+                        <option value="Gram">Gram / Chana (MSP: ₹5,440/qtl)</option>
+                      </select>
+                    </View>
+                  </View>
+
+                  <View style={{ width: 120 }}>
+                    <Text style={styles.qbFieldLabel}>Qty ({t('qtl') || 'qtl'})</Text>
+                    <TextInput
+                      value={bookingQuantity}
+                      onChangeText={setBookingQuantity}
+                      keyboardType="numeric"
+                      style={styles.qbTextInput}
+                      placeholder="50"
+                    />
+                  </View>
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.qbActionRow}>
+                  <TouchableOpacity
+                    onPress={handleQuickBookSubmit}
+                    disabled={bookingSubmitting}
+                    style={styles.qbSubmitBtn}
+                  >
+                    {bookingSubmitting ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <>
+                        <CheckCircle2 size={16} color="#ffffff" />
+                        <Text style={styles.qbSubmitBtnText}>
+                          {t('confirm_generate_token') || 'Confirm Slot & Get Token'}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <Link href={`/farmer/book${selectedCentreId ? `?centreId=${selectedCentreId}` : ''}`} style={{ textDecoration: 'none' }}>
+                    <View style={styles.qbAdvancedBtn}>
+                      <Text style={styles.qbAdvancedBtnText}>Full Form</Text>
+                      <ArrowRight size={13} color="#047857" />
+                    </View>
+                  </Link>
+                </View>
+              </View>
+            )}
+          </View>
+        </div>
+      )}
 
       {/* Quick Action Buttons */}
       <View style={styles.actionRow}>
-        <Link href="/farmer/book" style={{ textDecoration: 'none', flex: 1 }}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => {
+            setShowProcurementBox(true);
+            setTimeout(() => {
+              if (procurementBoxRef.current) {
+                procurementBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }, 100);
+          }}
+          style={{ flex: 1 }}
+        >
           <View style={styles.primaryActionCard}>
             <Calendar size={20} color="#fde047" style={{ marginBottom: 6 }} />
             <View>
@@ -171,7 +391,7 @@ export default function FarmerDashboard() {
               <Text style={styles.primaryActionSub}>{t('book_slot_sub')}</Text>
             </View>
           </View>
-        </Link>
+        </TouchableOpacity>
 
         <Link href="/farmer/recommendation" style={{ textDecoration: 'none', flex: 1 }}>
           <View style={styles.secondaryActionCard}>
@@ -346,6 +566,19 @@ export default function FarmerDashboard() {
     </ScrollView>
   );
 }
+
+const htmlSelectStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 14px',
+  borderRadius: '14px',
+  border: 'none',
+  backgroundColor: '#f0fdf4',
+  fontSize: '13px',
+  fontWeight: '600',
+  color: '#064e3b',
+  outline: 'none',
+  cursor: 'pointer',
+};
 
 const styles = StyleSheet.create({
   pageContainer: {
@@ -740,5 +973,171 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#047857',
+  },
+  closeBoxBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  quickBookBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#d1fae5',
+    gap: 16,
+    shadowColor: '#064e3b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  quickBookHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  quickBookTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#064e3b',
+  },
+  quickBookSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#047857',
+    marginTop: 2,
+  },
+  guaranteePill: {
+    backgroundColor: '#d1fae5',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  guaranteePillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#065f46',
+    textTransform: 'uppercase',
+  },
+  qbFieldGroup: {
+    gap: 6,
+  },
+  qbFieldLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#064e3b',
+    textTransform: 'uppercase',
+  },
+  qbSelectWrapper: {
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    borderRadius: 14,
+    backgroundColor: '#f0fdf4',
+    overflow: 'hidden',
+  },
+  slotsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  slotPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  slotPillActive: {
+    backgroundColor: '#047857',
+    borderColor: '#047857',
+  },
+  slotPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  slotPillTextActive: {
+    color: '#ffffff',
+  },
+  qbRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  qbTextInput: {
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#064e3b',
+  },
+  qbActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  qbSubmitBtn: {
+    flex: 1,
+    backgroundColor: '#047857',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#047857',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  qbSubmitBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  qbAdvancedBtn: {
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  qbAdvancedBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  quickBookError: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fca5a5',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 10,
+  },
+  quickBookErrorText: {
+    color: '#b91c1c',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

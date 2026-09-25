@@ -38,6 +38,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
     if (typeof window !== 'undefined') {
       localStorage.removeItem('mandimitra_token');
       localStorage.removeItem('mandimitra_user');
+      localStorage.removeItem('mandimitra_active_token');
     }
     onClose();
     router.replace('/login');

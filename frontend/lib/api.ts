@@ -90,6 +90,7 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       };
 
       if (typeof window !== 'undefined') {
+        localStorage.removeItem('mandimitra_active_token');
         localStorage.setItem('mandimitra_token', varunToken);
         localStorage.setItem('mandimitra_user', JSON.stringify(varunUser));
         localStorage.setItem('mandimitra_name_9209281432', 'Varun');
@@ -132,6 +133,7 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
           };
 
           if (typeof window !== 'undefined') {
+            localStorage.removeItem('mandimitra_active_token');
             localStorage.setItem('mandimitra_token', json.data.access_token);
             localStorage.setItem('mandimitra_user', JSON.stringify(userWithProfile));
           }
@@ -206,6 +208,7 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
     };
 
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('mandimitra_active_token');
       localStorage.setItem(`mandimitra_name_${phone}`, name);
       localStorage.setItem('mandimitra_token', json.data.access_token);
       localStorage.setItem('mandimitra_user', JSON.stringify(userWithProfile));
@@ -722,6 +725,7 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
           bookedAt: new Date().toISOString(),
         };
         localStorage.setItem('mandimitra_active_token', JSON.stringify(activeToken));
+        window.dispatchEvent(new CustomEvent('mandimitra_token_updated', { detail: activeToken }));
       }
 
       return {
@@ -735,6 +739,32 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
     } catch (err: any) {
       console.warn('Booking fallback handling:', err);
     }
+
+    // Fallback: generate local token if remote backend is unreachable or returns error
+    const fallbackTokenNumber = `MM-${Date.now().toString().slice(-4)}`;
+    const fallbackActiveToken = {
+      id: String(Date.now()),
+      tokenNumber: fallbackTokenNumber,
+      status: 'BOOKED',
+      appointmentTime: body.slotTime || '10:30 AM',
+      crop: body.crop || 'Wheat',
+      quantity: quantity_estimate,
+      centreId: bookedCentreId,
+      centreName: resolvedCentreName,
+      bookedAt: new Date().toISOString(),
+    };
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mandimitra_active_token', JSON.stringify(fallbackActiveToken));
+      window.dispatchEvent(new CustomEvent('mandimitra_token_updated', { detail: fallbackActiveToken }));
+    }
+    return {
+      success: true,
+      token: {
+        id: fallbackActiveToken.id,
+        tokenNumber: fallbackTokenNumber,
+      },
+      booking: fallbackActiveToken,
+    } as unknown as T;
   }
 
   // =========================================================================
