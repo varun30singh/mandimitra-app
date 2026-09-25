@@ -12,6 +12,7 @@ import {
 } from 'react-native-web';
 import { useLanguage, Language } from '../lib/language-context';
 import { fetchApi } from '../lib/api';
+import { useRouter } from 'next/navigation';
 import {
   X,
   User,
@@ -20,6 +21,7 @@ import {
   CheckCircle2,
   Save,
   ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 
 interface ProfileModalProps {
@@ -28,8 +30,18 @@ interface ProfileModalProps {
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
-  const { language, setLanguage } = useLanguage();
+  const router = useRouter();
+  const { language, setLanguage, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'language'>('profile');
+
+  const handleSignOut = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('mandimitra_token');
+      localStorage.removeItem('mandimitra_user');
+    }
+    onClose();
+    router.replace('/login');
+  };
 
   // Profile fields
   const [farmer, setFarmer] = useState<any>(null);
@@ -40,6 +52,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   const [defaultCrop, setDefaultCrop] = useState('Wheat');
 
   // Password fields
+  const [userPhone, setUserPhone] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -50,10 +63,20 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
   useEffect(() => {
     if (isOpen) {
+      try {
+        const uStr = localStorage.getItem('mandimitra_user');
+        if (uStr) {
+          const u = JSON.parse(uStr);
+          if (u.name) setFullName(u.name);
+          if (u.phone) setUserPhone(u.phone);
+        }
+      } catch {}
       fetchApi('/farmers/MH-NAS-2026-0812')
         .then((res) => {
           setFarmer(res);
-          setFullName(res.fullName);
+          if (res.fullName && res.fullName !== 'Ramesh Singh' && res.fullName !== 'Ramesh Kumar') {
+            setFullName(res.fullName);
+          }
           setVillage(res.village);
           setTaluka(res.taluka);
           setDistrict(res.district);
@@ -71,26 +94,22 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
     setSuccessMsg(null);
 
     try {
-      if (farmer?.id) {
-        await fetchApi(`/farmers/${farmer.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            fullName,
-            village,
-            taluka,
-            district,
-            defaultCrop,
-            preferredLanguage: language,
-          }),
-        });
+      const targetId = farmer?.id || 'farmer-001';
+      const updated = await fetchApi(`/farmers/${targetId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          fullName,
+          village,
+          taluka,
+          district,
+          defaultCrop,
+          preferredLanguage: language,
+        }),
+      });
+      if (updated) {
+        setFarmer(updated);
       }
-      setSuccessMsg(
-        language === 'hi'
-          ? 'प्रोफाइल सफलतापूर्वक अपडेट हो गई!'
-          : language === 'mr'
-          ? 'प्रोफाइल यशस्वीरित्या अपडेट झाली!'
-          : 'Profile updated successfully!',
-      );
+      setSuccessMsg(t('profile_updated_success'));
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to update profile');
@@ -101,17 +120,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
   const handleSavePassword = () => {
     if (newPassword !== confirmPassword) {
-      setErrorMsg('New password and confirmation do not match');
+      setErrorMsg(t('password_mismatch'));
       return;
     }
     if (newPassword.length < 4) {
-      setErrorMsg('Password should be at least 4 characters');
+      setErrorMsg(t('password_min_length'));
       return;
     }
     setSaving(true);
     setTimeout(() => {
       setSaving(false);
-      setSuccessMsg('Security PIN / Password updated successfully!');
+      setSuccessMsg(t('password_updated_success'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -143,7 +162,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             activeOpacity={0.7}
             onPress={onClose}
             style={styles.closeButton}
-            accessibilityLabel="Close"
+            accessibilityLabel={t('close')}
           >
             <X size={18} color="#064e3b" />
           </TouchableOpacity>
@@ -158,7 +177,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           >
             <User size={14} color={activeTab === 'profile' ? '#047857' : '#064e3b'} />
             <Text style={[styles.tabText, activeTab === 'profile' && styles.tabTextActive]}>
-              {language === 'hi' ? 'नाम एवं विवरण' : 'Edit Profile'}
+              {t('edit_profile_tab')}
             </Text>
           </TouchableOpacity>
 
@@ -169,7 +188,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           >
             <Globe size={14} color={activeTab === 'language' ? '#047857' : '#064e3b'} />
             <Text style={[styles.tabText, activeTab === 'language' && styles.tabTextActive]}>
-              {language === 'hi' ? 'भाषा (Language)' : 'Language'}
+              {t('language_tab')}
             </Text>
           </TouchableOpacity>
 
@@ -180,7 +199,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           >
             <Lock size={14} color={activeTab === 'password' ? '#047857' : '#064e3b'} />
             <Text style={[styles.tabText, activeTab === 'password' && styles.tabTextActive]}>
-              {language === 'hi' ? 'पासवर्ड / पिन' : 'Password'}
+              {t('password_tab')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -204,63 +223,53 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           {activeTab === 'profile' && (
             <View style={styles.formContainer}>
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>
-                  {language === 'hi' ? 'किसान का पूरा नाम' : 'Farmer Full Name'}
-                </Text>
+                <Text style={styles.inputLabel}>{t('farmer_full_name')}</Text>
                 <TextInput
                   value={fullName}
                   onChangeText={setFullName}
                   style={styles.textInput}
-                  placeholder="Enter full name"
+                  placeholder={t('enter_full_name')}
                   placeholderTextColor="#9ca3af"
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>
-                  {language === 'hi' ? 'गाँव (Village)' : 'Village'}
-                </Text>
+                <Text style={styles.inputLabel}>{t('village')}</Text>
                 <TextInput
                   value={village}
                   onChangeText={setVillage}
                   style={styles.textInput}
-                  placeholder="Enter village"
+                  placeholder={t('enter_village')}
                   placeholderTextColor="#9ca3af"
                 />
               </View>
 
               <View style={styles.formRow}>
                 <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={styles.inputLabel}>
-                    {language === 'hi' ? 'तहसील (Taluka)' : 'Taluka'}
-                  </Text>
+                  <Text style={styles.inputLabel}>{t('taluka')}</Text>
                   <TextInput
                     value={taluka}
                     onChangeText={setTaluka}
                     style={styles.textInput}
-                    placeholder="Taluka"
+                    placeholder={t('taluka')}
                     placeholderTextColor="#9ca3af"
                   />
                 </View>
 
                 <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={styles.inputLabel}>
-                    {language === 'hi' ? 'ज़िला (District)' : 'District'}
-                  </Text>
+                  <Text style={styles.inputLabel}>{t('district')}</Text>
                   <TextInput
                     value={district}
                     onChangeText={setDistrict}
                     style={styles.textInput}
-                    placeholder="District"
+                    placeholder={t('district')}
                     placeholderTextColor="#9ca3af"
                   />
                 </View>
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>
-                  {language === 'hi' ? 'मुख्य फसल (Primary Crop)' : 'Primary Crop'}
-                </Text>
+                <Text style={styles.inputLabel}>{t('primary_crop')}</Text>
                 <TextInput
                   value={defaultCrop}
                   onChangeText={setDefaultCrop}
@@ -281,9 +290,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                 ) : (
                   <>
                     <Save size={16} color="#ffffff" />
-                    <Text style={styles.primaryButtonText}>
-                      {language === 'hi' ? 'परिवर्तन सहेजें' : 'Save Profile Changes'}
-                    </Text>
+                    <Text style={styles.primaryButtonText}>{t('save_profile')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -293,13 +300,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           {/* TAB 2: SELECT LANGUAGE */}
           {activeTab === 'language' && (
             <View style={styles.formContainer}>
-              <Text style={styles.inputLabel}>
-                {language === 'hi'
-                  ? 'पसंदीदा भाषा चुनें'
-                  : language === 'mr'
-                  ? 'पसंतीची भाषा निवडा'
-                  : 'Select Preferred Language'}
-              </Text>
+              <Text style={styles.inputLabel}>{t('select_preferred_lang')}</Text>
 
               {[
                 { code: 'en', label: 'English', sub: 'Standard English interface' },
@@ -313,8 +314,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                     activeOpacity={0.8}
                     onPress={() => {
                       setLanguage(langItem.code as Language);
-                      setSuccessMsg(`Language switched to ${langItem.label}`);
-                      setTimeout(() => setSuccessMsg(null), 2000);
                     }}
                     style={[styles.langCard, isSelected && styles.langCardSelected]}
                   >
@@ -335,7 +334,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           {activeTab === 'password' && (
             <View style={styles.formContainer}>
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Current Password / PIN</Text>
+                <Text style={styles.inputLabel}>{t('current_pin')}</Text>
                 <TextInput
                   value={currentPassword}
                   onChangeText={setCurrentPassword}
@@ -347,7 +346,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>New Password / PIN</Text>
+                <Text style={styles.inputLabel}>{t('new_pin')}</Text>
                 <TextInput
                   value={newPassword}
                   onChangeText={setNewPassword}
@@ -359,7 +358,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Confirm New Password</Text>
+                <Text style={styles.inputLabel}>{t('confirm_pin')}</Text>
                 <TextInput
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
@@ -381,7 +380,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                 ) : (
                   <>
                     <Lock size={16} color="#ffffff" />
-                    <Text style={styles.primaryButtonText}>Update Password / PIN</Text>
+                    <Text style={styles.primaryButtonText}>{t('update_password')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -389,11 +388,23 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           )}
         </ScrollView>
 
+        {/* Sign Out Button */}
+        <View style={styles.signOutContainer}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleSignOut}
+            style={styles.signOutButton}
+          >
+            <LogOut size={16} color="#dc2626" />
+            <Text style={styles.signOutButtonText}>{t('sign_out')}</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Modal Footer */}
         <View style={styles.modalFooter}>
           <ShieldCheck size={14} color="#047857" />
           <Text style={styles.footerText}>
-            Aadhaar-Linked Verified Mobile: +91-9822012345
+            {t('aadhaar_verified')}: {farmer?.mobile ? `+91-${farmer.mobile}` : (userPhone ? `+91-${userPhone}` : '+91-Verified')}
           </Text>
         </View>
       </View>
@@ -642,5 +653,26 @@ const styles = RNStyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#047857',
+  },
+  signOutContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fef2f2',
+    borderWidth: 1.5,
+    borderColor: '#fecaca',
+    borderRadius: 12,
+    paddingVertical: 12,
+  },
+  signOutButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#dc2626',
+    marginLeft: 8,
   },
 });

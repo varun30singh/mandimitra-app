@@ -72,12 +72,26 @@ export default function FarmerDashboard() {
         .catch(() => {});
     };
 
+    const handleProfileSync = () => {
+      try {
+        const uStr = localStorage.getItem('mandimitra_user');
+        if (uStr) setCurrentUser(JSON.parse(uStr));
+      } catch {}
+      fetchApi('/farmers/MH-NAS-2026-0812')
+        .then((f) => {
+          if (f) setFarmer(f);
+        })
+        .catch(() => {});
+    };
+
     if (typeof window !== 'undefined') {
       window.addEventListener('mandimitra_orders_updated', handleOrderSync);
       window.addEventListener('mandimitra_centres_updated', handleCentresSync);
+      window.addEventListener('mandimitra_profile_updated', handleProfileSync);
       window.addEventListener('storage', () => {
         handleOrderSync();
         handleCentresSync();
+        handleProfileSync();
       });
     }
 
@@ -85,6 +99,7 @@ export default function FarmerDashboard() {
       if (typeof window !== 'undefined') {
         window.removeEventListener('mandimitra_orders_updated', handleOrderSync);
         window.removeEventListener('mandimitra_centres_updated', handleCentresSync);
+        window.removeEventListener('mandimitra_profile_updated', handleProfileSync);
         window.removeEventListener('storage', handleOrderSync);
       }
     };

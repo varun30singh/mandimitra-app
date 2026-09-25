@@ -339,54 +339,159 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
   }
 
   // =========================================================================
-  // 4. FARMERS: ADAPTER
+  // 4. FARMERS: UNIFIED ADAPTER (WITH PERSISTENCE & EDIT SUPPORT)
   // =========================================================================
   if (cleanEndpoint.startsWith('/farmers')) {
+    // 4A. UPDATE: PUT or PATCH farmer profile
+    if (options.method === 'PUT' || options.method === 'PATCH') {
+      let body: any = {};
+      try {
+        body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
+      } catch (e) {}
+
+      let currentUser: any = {};
+      let userPhone = '';
+      if (typeof window !== 'undefined') {
+        try {
+          const uStr = localStorage.getItem('mandimitra_user');
+          if (uStr) {
+            currentUser = JSON.parse(uStr);
+            userPhone = currentUser.phone || '';
+          }
+        } catch {}
+      }
+
+      const parts = cleanEndpoint.split('/');
+      const farmerId = parts[2] || currentUser.id || 'farmer-001';
+      let backendUpdated: any = null;
+
+      try {
+        const res = await fetch(`${base}/farmers/${farmerId}`, {
+          method: options.method,
+          headers,
+          body: JSON.stringify(body),
+        });
+        const json = await res.json();
+        if (json.data) backendUpdated = json.data;
+      } catch (e) {
+        console.warn('Backend farmer update warning:', e);
+      }
+
+      const newFullName = body.fullName || body.name || currentUser.name || 'Farmer';
+      const updatedProfile = {
+        id: farmerId,
+        farmerId: 'MH-NAS-2026-0812',
+        fullName: newFullName,
+        name: newFullName,
+        mobile: body.mobile || currentUser.phone || '+919822012345',
+        village: body.village !== undefined ? body.village : (currentUser.village || 'Pimpalgaon Baswant'),
+        taluka: body.taluka !== undefined ? body.taluka : (currentUser.taluka || 'Niphad'),
+        district: body.district !== undefined ? body.district : (currentUser.district || 'Nashik'),
+        state: body.state || 'Maharashtra',
+        defaultCrop: body.defaultCrop || currentUser.defaultCrop || 'Wheat',
+        defaultQuantity: body.defaultQuantity !== undefined ? Number(body.defaultQuantity) : (currentUser.defaultQuantity || 50),
+        preferredLanguage: body.preferredLanguage || currentUser.preferredLanguage || 'en',
+        registrationStatus: 'VERIFIED',
+      };
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('mandimitra_farmer_profile', JSON.stringify(updatedProfile));
+          if (userPhone) {
+            localStorage.setItem(`mandimitra_farmer_${userPhone}`, JSON.stringify(updatedProfile));
+            localStorage.setItem(`mandimitra_name_${userPhone}`, updatedProfile.fullName);
+          }
+          const newUserData = {
+            ...currentUser,
+            name: updatedProfile.fullName,
+            village: updatedProfile.village,
+            taluka: updatedProfile.taluka,
+            district: updatedProfile.district,
+            defaultCrop: updatedProfile.defaultCrop,
+            defaultQuantity: updatedProfile.defaultQuantity,
+          };
+          localStorage.setItem('mandimitra_user', JSON.stringify(newUserData));
+          window.dispatchEvent(new CustomEvent('mandimitra_profile_updated', { detail: updatedProfile }));
+        } catch {}
+      }
+
+      return (backendUpdated || updatedProfile) as unknown as T;
+    }
+
+    // 4B. GET: Fetch farmer profile (prioritizing user edits)
+    let savedProfile: any = null;
+    let currentUser: any = {};
+    let userPhone = '';
+
+    if (typeof window !== 'undefined') {
+      try {
+        const uStr = localStorage.getItem('mandimitra_user');
+        if (uStr) {
+          currentUser = JSON.parse(uStr);
+          userPhone = currentUser.phone || '';
+        }
+        const pStr = (userPhone && localStorage.getItem(`mandimitra_farmer_${userPhone}`)) || localStorage.getItem('mandimitra_farmer_profile');
+        if (pStr) {
+          savedProfile = JSON.parse(pStr);
+        }
+      } catch {}
+    }
+
+    // If search endpoint, e.g. /farmers/search?q=...
+    if (cleanEndpoint.startsWith('/farmers/search')) {
+      const matched = savedProfile || {
+        id: 'farmer-001',
+        farmerId: 'MH-NAS-2026-0812',
+        fullName: currentUser.name || 'Farmer',
+        mobile: userPhone ? `+91${userPhone}` : '+919822012345',
+        village: 'Pimpalgaon Baswant',
+        taluka: 'Niphad',
+      };
+      return [matched] as unknown as T;
+    }
+
+    // If user has saved profile locally, prioritize it
+    if (savedProfile) {
+      return savedProfile as unknown as T;
+    }
+
+    // Otherwise try backend
     try {
-      // First try fetching /farmers/farmer-001 or /farmers from Render
-      const farmerRes = await fetch(`${base}/farmers/farmer-001`, { headers });
-      const farmerJson = await farmerRes.json();
-      const f = farmerJson.data;
+      const res = await fetch(`${base}/farmers/farmer-001`, { headers });
+      const json = await res.json();
+      const f = json.data;
       if (f) {
         return {
           id: f.id || 'farmer-001',
           farmerId: f.id || 'MH-NAS-2026-0812',
-          fullName: f.name || f.fullName || 'Ramesh Singh',
-          village: f.village || 'Dorli',
-          taluka: f.district || 'Meerut',
-          district: f.district || 'Meerut',
-          state: f.state || 'Uttar Pradesh',
-          mobile: f.mobile || '+919876543210',
+          fullName: currentUser.name || f.name || f.fullName || 'Farmer',
+          village: f.village || 'Pimpalgaon Baswant',
+          taluka: f.district || 'Niphad',
+          district: f.district || 'Nashik',
+          state: f.state || 'Maharashtra',
+          mobile: currentUser.phone ? `+91${currentUser.phone}` : (f.mobile || '+919822012345'),
           defaultCrop: 'Wheat',
+          defaultQuantity: 50,
+          preferredLanguage: 'en',
           registrationStatus: f.isVerified ? 'VERIFIED' : 'PENDING',
         } as unknown as T;
       }
     } catch (e) {}
 
-    let currentName = '';
-    let currentPhone = '';
-    if (typeof window !== 'undefined') {
-      try {
-        const uStr = localStorage.getItem('mandimitra_user');
-        if (uStr) {
-          const u = JSON.parse(uStr);
-          if (u.name) currentName = u.name;
-          if (u.phone) currentPhone = u.phone;
-        }
-      } catch {}
-    }
-
     // Fallback using authenticated user details
     return {
-      id: 'farmer-001',
+      id: currentUser.id || 'farmer-001',
       farmerId: 'MH-NAS-2026-0812',
-      fullName: currentName || 'Farmer',
-      village: 'Pimpalgaon Baswant',
-      taluka: 'Niphad',
-      district: 'Nashik',
+      fullName: currentUser.name || 'Farmer',
+      name: currentUser.name || 'Farmer',
+      village: currentUser.village || 'Pimpalgaon Baswant',
+      taluka: currentUser.taluka || 'Niphad',
+      district: currentUser.district || 'Nashik',
       state: 'Maharashtra',
-      mobile: currentPhone ? `+91${currentPhone}` : '+919822012345',
-      defaultCrop: 'Wheat',
+      mobile: currentUser.phone ? `+91${currentUser.phone}` : '+919822012345',
+      defaultCrop: currentUser.defaultCrop || 'Wheat',
+      defaultQuantity: currentUser.defaultQuantity || 50,
+      preferredLanguage: currentUser.preferredLanguage || 'en',
       registrationStatus: 'VERIFIED',
     } as unknown as T;
   }
