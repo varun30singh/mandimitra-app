@@ -79,14 +79,16 @@ function LoginContent() {
       const res = await fetchApi('/auth/login', {
         method: 'POST',
         body: JSON.stringify({
-          mobile: loginPhone.trim(),
-          password: loginPassword,
+          phone: String(loginPhone).trim(),
+          mobile: String(loginPhone).trim(),
+          password: String(loginPassword),
         }),
       });
 
-      if (res?.accessToken) {
-        localStorage.setItem('mandimitra_token', res.accessToken);
-        localStorage.setItem('mandimitra_user', JSON.stringify(res.user));
+      if (res?.accessToken || res?.access_token) {
+        const token = res.accessToken || res.access_token;
+        localStorage.setItem('mandimitra_token', token);
+        localStorage.setItem('mandimitra_user', JSON.stringify(res.user || res));
       }
 
       router.push('/farmer/dashboard');
@@ -128,12 +130,15 @@ function LoginContent() {
     setError(null);
 
     try {
-      const res = await fetchApi('/auth/farmer/register', {
+      const res = await fetchApi('/auth/register', {
         method: 'POST',
         body: JSON.stringify({
+          phone: String(regPhone).trim(),
+          mobile: String(regPhone).trim(),
+          password: String(regPassword),
+          role: 'farmer',
+          name: regName.trim(),
           fullName: regName.trim(),
-          mobile: regPhone.trim(),
-          password: regPassword,
           aadhaarNumber: regAadhaar.trim(),
           area: regArea.trim(),
         }),

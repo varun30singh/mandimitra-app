@@ -42,55 +42,56 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
     } catch (e) {}
 
-    const phone = (body.phone || body.mobile || '').replace(/\D/g, '').slice(-10) || '9822012345';
-    const password = body.password || 'password123';
+    const phone = String(body.phone || body.mobile || '').replace(/\D/g, '').slice(-10) || '9822012345';
+    const password = String(body.password || 'password123');
 
-    try {
-      const res = await fetch(`${base}/auth/login`, {
-        ...options,
-        headers,
-        body: JSON.stringify({ phone, password }),
-      });
-      const json = await res.json();
+    const res = await fetch(`${base}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password }),
+    });
+    const json = await res.json();
 
-      if (res.ok && json.data?.access_token) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('mandimitra_token', json.data.access_token);
-          localStorage.setItem('mandimitra_user', JSON.stringify(json.data.user));
-        }
-        return {
-          accessToken: json.data.access_token,
-          user: json.data.user,
-        } as unknown as T;
+    if (res.ok && json.data?.access_token) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mandimitra_token', json.data.access_token);
+        localStorage.setItem('mandimitra_user', JSON.stringify(json.data.user));
       }
-
-      // If login failed because user doesn't exist yet on Render, auto-register them as farmer
-      if (!res.ok) {
-        const regRes = await fetch(`${base}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone,
-            password: password.length >= 6 ? password : `${password}1234`.slice(0, 6),
-            role: 'farmer',
-            name: 'Ramesh Singh',
-          }),
-        });
-        const regJson = await regRes.json();
-        if (regJson.data?.access_token) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('mandimitra_token', regJson.data.access_token);
-            localStorage.setItem('mandimitra_user', JSON.stringify(regJson.data.user));
-          }
-          return {
-            accessToken: regJson.data.access_token,
-            user: regJson.data.user,
-          } as unknown as T;
-        }
-      }
-    } catch (err) {
-      console.warn('Login proxy warning, returning session:', err);
+      return {
+        accessToken: json.data.access_token,
+        access_token: json.data.access_token,
+        user: json.data.user,
+      } as unknown as T;
     }
+
+    // If login returned 401/400 because user is not yet created on Render, auto-register them
+    const regRes = await fetch(`${base}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone,
+        password: password.length >= 6 ? password : `${password}123456`.slice(0, 6),
+        role: 'farmer',
+        name: 'Ramesh Singh',
+      }),
+    });
+    const regJson = await regRes.json();
+    if (regRes.ok && regJson.data?.access_token) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mandimitra_token', regJson.data.access_token);
+        localStorage.setItem('mandimitra_user', JSON.stringify(regJson.data.user));
+      }
+      return {
+        accessToken: regJson.data.access_token,
+        access_token: regJson.data.access_token,
+        user: regJson.data.user,
+      } as unknown as T;
+    }
+
+    const errorMsg = Array.isArray(json?.message)
+      ? json.message.join(', ')
+      : json?.message || 'Invalid phone or password';
+    throw new Error(errorMsg);
   }
 
   // =========================================================================
@@ -102,31 +103,39 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
     } catch (e) {}
 
-    const phone = (body.phone || body.mobile || '').replace(/\D/g, '').slice(-10) || '9822012345';
-    const rawPass = body.password || 'password123';
+    const phone = String(body.phone || body.mobile || '').replace(/\D/g, '').slice(-10);
+    const rawPass = String(body.password || 'password123');
     const password = rawPass.length >= 6 ? rawPass : `${rawPass}123456`.slice(0, 6);
-    const name = body.fullName || body.name || 'Farmer';
+    const name = String(body.fullName || body.name || 'Farmer');
 
-    try {
-      const res = await fetch(`${base}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone,
-          password,
-          role: 'farmer',
-          name,
-        }),
-      });
-      const json = await res.json();
-      if (json.data?.access_token && typeof window !== 'undefined') {
-        localStorage.setItem('mandimitra_token', json.data.access_token);
-        localStorage.setItem('mandimitra_user', JSON.stringify(json.data.user));
-      }
-      return json.data !== undefined ? json.data : json;
-    } catch (err: any) {
-      console.error('Register error:', err);
+    const res = await fetch(`${base}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone,
+        password,
+        role: 'farmer',
+        name,
+      }),
+    });
+    const json = await res.json();
+
+    if (!res.ok || json.success === false) {
+      const errorMsg = Array.isArray(json?.message)
+        ? json.message.join(', ')
+        : json?.message || 'Failed to create account';
+      throw new Error(errorMsg);
     }
+
+    if (json.data?.access_token && typeof window !== 'undefined') {
+      localStorage.setItem('mandimitra_token', json.data.access_token);
+      localStorage.setItem('mandimitra_user', JSON.stringify(json.data.user));
+    }
+    return {
+      accessToken: json.data?.access_token,
+      access_token: json.data?.access_token,
+      user: json.data?.user,
+    } as unknown as T;
   }
 
   // =========================================================================
