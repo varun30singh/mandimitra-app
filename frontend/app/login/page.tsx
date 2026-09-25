@@ -284,41 +284,6 @@ function LoginContent() {
             )}
           </TouchableOpacity>
 
-          {/* Quick Farmer Login Credentials */}
-          <View style={{ marginTop: 12, alignItems: 'center', width: '100%' }}>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => {
-                setLoginPhone('9209281432');
-                setLoginPassword('varun');
-                setError(null);
-              }}
-              style={{
-                backgroundColor: '#ecfdf5',
-                borderColor: '#a7f3d0',
-                borderWidth: 1,
-                borderRadius: 12,
-                paddingVertical: 8,
-                paddingHorizontal: 14,
-                width: '100%',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <View>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#065f46' }}>
-                  Farmer: Varun (9209281432)
-                </Text>
-                <Text style={{ fontSize: 11, color: '#047857' }}>
-                  Pass: varun (Tap to autofill)
-                </Text>
-              </View>
-              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#059669' }}>
-                Use →
-              </Text>
-            </TouchableOpacity>
-          </View>
 
           {/* Bottom Message: New user create new account */}
           <View style={styles.bottomLinkContainer}>
