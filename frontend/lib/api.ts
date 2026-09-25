@@ -48,6 +48,63 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
     const phone = rawPhone;
     const userPass = String(body.password || '');
 
+    // Dedicated Farmer Account: 9209281432 / varun
+    if (phone === '9209281432') {
+      if (userPass !== 'varun') {
+        throw new Error('Invalid phone number or password. Please verify your credentials.');
+      }
+      const varunToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwODBkMTk2NC1jNjJiLTRhZTktYTliOC03ZDk4NDlkNDcwM2QiLCJtb2JpbGUiOiI5MjA5MjgxNDMyIiwicm9sZSI6IkZBUk1FUiIsIm5hbWUiOiJWYXJ1biIsImlhdCI6MTc5MDM1ODUzNywiZXhwIjoxNzkwOTYzMzM3fQ.nbNC3eiJA6OTl7KdMCjjit9mvvItcc4NrT_LNBUDvyY';
+      const varunUser = {
+        id: '080d1964-c62b-4ae9-a9b8-7d9849d4703d',
+        userId: '080d1964-c62b-4ae9-a9b8-7d9849d4703d',
+        phone: '9209281432',
+        mobile: '9209281432',
+        role: 'farmer',
+        name: 'Varun',
+        fullName: 'Varun',
+        village: 'Pimpalgaon Baswant',
+        taluka: 'Niphad',
+        district: 'Nashik',
+        state: 'Maharashtra',
+        farmerId: 'MH-NAS-2026-9209',
+        defaultCrop: 'Wheat',
+        defaultQuantity: 65,
+        preferredLanguage: 'hi',
+        registrationStatus: 'VERIFIED',
+      };
+
+      const varunProfile = {
+        id: '080d1964-c62b-4ae9-a9b8-7d9849d4703d',
+        farmerId: 'MH-NAS-2026-9209',
+        fullName: 'Varun',
+        name: 'Varun',
+        mobile: '+919209281432',
+        village: 'Pimpalgaon Baswant',
+        taluka: 'Niphad',
+        district: 'Nashik',
+        state: 'Maharashtra',
+        defaultCrop: 'Wheat',
+        defaultQuantity: 65,
+        preferredLanguage: 'hi',
+        registrationStatus: 'VERIFIED',
+      };
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mandimitra_token', varunToken);
+        localStorage.setItem('mandimitra_user', JSON.stringify(varunUser));
+        localStorage.setItem('mandimitra_name_9209281432', 'Varun');
+        localStorage.setItem('mandimitra_farmer_9209281432', JSON.stringify(varunProfile));
+        localStorage.setItem('mandimitra_farmer_profile', JSON.stringify(varunProfile));
+        window.dispatchEvent(new CustomEvent('mandimitra_profile_updated', { detail: varunProfile }));
+      }
+
+      return {
+        accessToken: varunToken,
+        access_token: varunToken,
+        user: varunUser,
+      } as unknown as T;
+    }
+
     // Try user's password, then candidate seed passwords on Render
     const passwordsToTry = [userPass];
     if (!passwordsToTry.includes('password123')) passwordsToTry.push('password123');
@@ -481,6 +538,21 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
 
     // If search endpoint, e.g. /farmers/search?q=...
     if (cleanEndpoint.startsWith('/farmers/search')) {
+      if (cleanEndpoint.includes('9209281432') || cleanEndpoint.toLowerCase().includes('varun')) {
+        return [{
+          id: '080d1964-c62b-4ae9-a9b8-7d9849d4703d',
+          farmerId: 'MH-NAS-2026-9209',
+          fullName: 'Varun',
+          name: 'Varun',
+          mobile: '+919209281432',
+          village: 'Pimpalgaon Baswant',
+          taluka: 'Niphad',
+          district: 'Nashik',
+          state: 'Maharashtra',
+          defaultCrop: 'Wheat',
+          defaultQuantity: 65,
+        }] as unknown as T;
+      }
       const matched = savedProfile || {
         id: 'farmer-001',
         farmerId: 'MH-NAS-2026-0812',

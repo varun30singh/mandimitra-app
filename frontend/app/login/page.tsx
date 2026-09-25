@@ -26,6 +26,7 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  Shield,
 } from 'lucide-react';
 
 function LoginContent() {
@@ -43,11 +44,12 @@ function LoginContent() {
   }, [searchParams]);
 
   // LOGIN STATE (strictly Phone + Password)
-  const [loginPhone, setLoginPhone] = useState('9822012345');
-  const [loginPassword, setLoginPassword] = useState('password123');
+  const [loginPhone, setLoginPhone] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // REGISTRATION STATE
+  const [regRole, setRegRole] = useState<'farmer' | 'stockist' | 'buyer' | 'broker'>('farmer');
   const [regName, setRegName] = useState('');
   const [regAadhaar, setRegAadhaar] = useState('');
   const [regPhone, setRegPhone] = useState('');
@@ -64,11 +66,11 @@ function LoginContent() {
   // HANDLE LOGIN
   const handleLogin = async () => {
     if (!loginPhone || loginPhone.trim().length < 10) {
-      setError('Please enter a valid 10-digit phone number');
+      setError(t('err_phone_invalid'));
       return;
     }
     if (!loginPassword) {
-      setError('Please enter your password');
+      setError(t('err_password_empty'));
       return;
     }
 
@@ -91,9 +93,21 @@ function LoginContent() {
         localStorage.setItem('mandimitra_user', JSON.stringify(res.user || res));
       }
 
-      router.push('/farmer/dashboard');
+      const loggedUser = res?.user || res;
+      const role = String(loggedUser?.role || '').toLowerCase();
+      if (role === 'operator' || role === 'admin') {
+        router.push('/operator/dashboard');
+      } else if (role === 'stockist') {
+        router.push('/stockist/dashboard');
+      } else if (role === 'broker') {
+        router.push('/broker/dashboard');
+      } else if (role === 'buyer') {
+        router.push('/buyer/dashboard');
+      } else {
+        router.push('/farmer/dashboard');
+      }
     } catch (err: any) {
-      setError(err.message || 'Invalid phone number or password');
+      setError(err.message || t('err_login_failed'));
     } finally {
       setLoading(false);
     }
@@ -102,27 +116,27 @@ function LoginContent() {
   // HANDLE REGISTER
   const handleRegister = async () => {
     if (!regName.trim()) {
-      setError('Please enter your full name');
+      setError(t('err_name_empty'));
       return;
     }
-    if (!regAadhaar.trim() || regAadhaar.trim().length < 12) {
-      setError('Please enter a valid 12-digit Aadhaar card number');
+    if (regRole === 'farmer' && (!regAadhaar.trim() || regAadhaar.trim().length < 12)) {
+      setError(t('err_aadhaar_invalid'));
       return;
     }
     if (!regPhone.trim() || regPhone.trim().length < 10) {
-      setError('Please enter a valid 10-digit phone number');
+      setError(t('err_phone_invalid'));
       return;
     }
-    if (!regPassword || regPassword.length < 4) {
-      setError('Password must be at least 4 characters long');
+    if (!regPassword || regPassword.length < 6) {
+      setError(t('err_password_short'));
       return;
     }
     if (regPassword !== regRePassword) {
-      setError('Passwords do not match');
+      setError(t('err_passwords_dont_match'));
       return;
     }
     if (!regArea.trim()) {
-      setError('Please enter your village, taluka, or area');
+      setError(t('err_area_empty'));
       return;
     }
 
@@ -136,7 +150,7 @@ function LoginContent() {
           phone: String(regPhone).trim(),
           mobile: String(regPhone).trim(),
           password: String(regPassword),
-          role: 'farmer',
+          role: regRole,
           name: regName.trim(),
           fullName: regName.trim(),
           aadhaarNumber: regAadhaar.trim(),
@@ -144,8 +158,12 @@ function LoginContent() {
         }),
       });
 
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`mandimitra_name_${regPhone.trim()}`, regName.trim());
+      }
+
       // On submit success: redirect to original login page with phone pre-filled
-      setSuccessMsg('Account created successfully! Please enter your password to login.');
+      setSuccessMsg(t('account_created_success'));
       setLoginPhone(regPhone.trim());
       setLoginPassword('');
       setView('login');
@@ -156,8 +174,9 @@ function LoginContent() {
       setRegPassword('');
       setRegRePassword('');
       setRegArea('');
+      setRegRole('farmer');
     } catch (err: any) {
-      setError(err.message || 'Failed to create account. Please try again.');
+      setError(err.message || t('account_create_failed'));
     } finally {
       setLoading(false);
     }
@@ -262,6 +281,42 @@ function LoginContent() {
             )}
           </TouchableOpacity>
 
+          {/* Quick Farmer Login Credentials */}
+          <View style={{ marginTop: 12, alignItems: 'center', width: '100%' }}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                setLoginPhone('9209281432');
+                setLoginPassword('varun');
+                setError(null);
+              }}
+              style={{
+                backgroundColor: '#ecfdf5',
+                borderColor: '#a7f3d0',
+                borderWidth: 1,
+                borderRadius: 12,
+                paddingVertical: 8,
+                paddingHorizontal: 14,
+                width: '100%',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#065f46' }}>
+                  Farmer: Varun (9209281432)
+                </Text>
+                <Text style={{ fontSize: 11, color: '#047857' }}>
+                  Pass: varun (Tap to autofill)
+                </Text>
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#059669' }}>
+                Use →
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Bottom Message: New user create new account */}
           <View style={styles.bottomLinkContainer}>
             <Text style={styles.bottomMessageText}>{t('new_user_question')}</Text>
@@ -289,6 +344,26 @@ function LoginContent() {
             <Text style={styles.registerSub}>{t('create_account_sub')}</Text>
           </View>
 
+          {/* 0. Account Role Selection Dropdown */}
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>{t('role_field')}</Text>
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputIconBox}>
+                <Shield size={16} color="#047857" />
+              </View>
+              <select
+                value={regRole}
+                onChange={(e: any) => setRegRole(e.target.value)}
+                style={selectRoleStyle}
+              >
+                <option value="farmer">{t('role_farmer')}</option>
+                <option value="stockist">{t('role_stockist')}</option>
+                <option value="buyer">{t('role_buyer')}</option>
+                <option value="broker">{t('role_broker')}</option>
+              </select>
+            </View>
+          </View>
+
           {/* 1. Name */}
           <View style={styles.inputBlock}>
             <Text style={styles.inputLabel}>{t('name_field')}</Text>
@@ -299,7 +374,7 @@ function LoginContent() {
               <TextInput
                 value={regName}
                 onChangeText={setRegName}
-                placeholder="e.g. Ramesh Kumar"
+                placeholder={t('name_placeholder')}
                 placeholderTextColor="#9ca3af"
                 style={styles.textInput}
               />
@@ -308,7 +383,9 @@ function LoginContent() {
 
           {/* 2. Aadhaar Card Number */}
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>{t('aadhaar_field')}</Text>
+            <Text style={styles.inputLabel}>
+              {t('aadhaar_field')} {regRole !== 'farmer' ? '(Optional)' : ''}
+            </Text>
             <View style={styles.inputWrapper}>
               <View style={styles.inputIconBox}>
                 <CreditCard size={16} color="#047857" />
@@ -318,7 +395,7 @@ function LoginContent() {
                 onChangeText={setRegAadhaar}
                 keyboardType="numeric"
                 maxLength={12}
-                placeholder="12-digit Aadhaar number"
+                placeholder={t('aadhaar_placeholder')}
                 placeholderTextColor="#9ca3af"
                 style={styles.textInput}
               />
@@ -337,7 +414,7 @@ function LoginContent() {
                 onChangeText={setRegPhone}
                 keyboardType="numeric"
                 maxLength={10}
-                placeholder="10-digit mobile number"
+                placeholder={t('phone_placeholder')}
                 placeholderTextColor="#9ca3af"
                 style={styles.textInput}
               />
@@ -355,7 +432,7 @@ function LoginContent() {
                 value={regPassword}
                 onChangeText={setRegPassword}
                 secureTextEntry={!showRegPassword}
-                placeholder="Create password"
+                placeholder={t('password_placeholder')}
                 placeholderTextColor="#9ca3af"
                 style={styles.textInput}
               />
@@ -384,7 +461,7 @@ function LoginContent() {
                 value={regRePassword}
                 onChangeText={setRegRePassword}
                 secureTextEntry={!showRegPassword}
-                placeholder="Confirm password"
+                placeholder={t('re_password_field')}
                 placeholderTextColor="#9ca3af"
                 style={styles.textInput}
               />
@@ -401,7 +478,7 @@ function LoginContent() {
               <TextInput
                 value={regArea}
                 onChangeText={setRegArea}
-                placeholder="e.g. Pimpalgaon Baswant, Niphad"
+                placeholder={t('area_placeholder')}
                 placeholderTextColor="#9ca3af"
                 style={styles.textInput}
               />
@@ -614,3 +691,18 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
+
+const selectRoleStyle: any = {
+  flex: 1,
+  backgroundColor: 'transparent',
+  border: 'none',
+  paddingTop: 12,
+  paddingBottom: 12,
+  paddingLeft: 4,
+  paddingRight: 8,
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#064e3b',
+  outline: 'none',
+  cursor: 'pointer',
+};

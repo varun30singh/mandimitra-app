@@ -43,8 +43,9 @@ export class AuthController {
   }
 
   @Post('login')
-  async loginWithCredentials(@Body() body: { mobile: string; password: string }) {
-    const result = await this.authService.loginWithCredentials(body.mobile, body.password);
+  async loginWithCredentials(@Body() body: { mobile?: string; phone?: string; password: string }) {
+    const mobile = body.mobile || body.phone || '';
+    const result = await this.authService.loginWithCredentials(mobile, body.password);
     return successResponse(result);
   }
 
