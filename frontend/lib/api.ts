@@ -4,6 +4,8 @@
  * https://mandi-mitra-backend-l38w.onrender.com/api
  */
 
+import { queryKnowledgeBase, DEFAULT_SUGGESTED_QUESTIONS } from './chatbot-knowledge';
+
 const RENDER_API = 'https://mandi-mitra-backend-l38w.onrender.com/api';
 
 // In browser, use /api proxy via Next.js rewrites to eliminate CORS issues on mobile devices
@@ -952,7 +954,7 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
   }
 
   // =========================================================================
-  // 9. CHATBOT: ADAPTER (WITH ZERO-FAIL MULTILINGUAL FALLBACK)
+  // 9. CHATBOT: COMPREHENSIVE MULTILINGUAL KNOWLEDGE BASE ADAPTER (800+ QUESTIONS)
   // =========================================================================
   if (cleanEndpoint === '/chatbot/chat' && options.method === 'POST') {
     let body: any = {};
@@ -960,59 +962,48 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
     } catch (e) {}
 
-    const query = (body.message || '').toLowerCase();
-    const lang = (typeof window !== 'undefined' ? localStorage.getItem('mandimitra_lang') : 'en') || 'en';
+    const rawMessage = (body.message || '').trim();
+    let currentLang = (typeof window !== 'undefined' ? (localStorage.getItem('mandimitra_lang') as 'en' | 'hi' | 'mr') : 'en') || 'en';
+    if (!['en', 'hi', 'mr'].includes(currentLang)) currentLang = 'en';
 
-    try {
-      const res = await fetch(`${base}/chatbot/chat`, {
-        ...options,
-        headers,
-      });
-      const json = await res.json();
-      if (json.reply) return json;
-    } catch (e) {}
+    // Query 40-category, 800+ question multilingual knowledge engine
+    const kbResult = queryKnowledgeBase(rawMessage, currentLang);
+    let finalReply = kbResult.reply;
+    let finalIntent = kbResult.intent;
+    let finalSource: 'database' | 'knowledge_base' | 'business_logic' = kbResult.source;
+    let suggestedQuestions = kbResult.suggestedQuestions;
 
-    // Resilient fallback responses tailored to farmer's query in English, Hindi, and Marathi
-    let reply = '';
-    if (query.includes('token') || query.includes('टोकन')) {
-      if (lang === 'hi') {
-        reply = 'आपका सक्रिय टोकन MM-001 है। वर्तमान में 2 किसान आपसे आगे हैं और अनुमानित प्रतीक्षा समय लगभग 14 मिनट है।';
-      } else if (lang === 'mr') {
-        reply = 'तुमचा सक्रिय टोकन MM-001 आहे. सध्या 2 शेतकरी तुमच्या पुढे आहेत आणि अंदाजे प्रतीक्षा वेळ 14 मिनिटे आहे.';
-      } else {
-        reply = 'Your active token is MM-001. There are 2 farmers ahead of you with an estimated wait time of ~14 minutes.';
-      }
-    } else if (query.includes('msp') || query.includes('भाव') || query.includes('दर') || query.includes('rate')) {
-      if (lang === 'hi') {
-        reply = 'वर्ष 2026 के लिए सरकारी MSP दरें:\n• गेहूँ (Wheat): ₹2,275 प्रति क्विंटल\n• धान (Rice): ₹2,300 प्रति क्विंटल\n• सरसों (Mustard): ₹5,650 प्रति क्विंटल';
-      } else if (lang === 'mr') {
-        reply = 'सन २०२६ चे सरकारी हमीभाव (MSP):\n• गहू (Wheat): ₹2,275 प्रति क्विंटल\n• तांदूळ (Rice): ₹2,300 प्रति क्विंटल\n• मोहरी (Mustard): ₹5,650 प्रति क्विंटल';
-      } else {
-        reply = 'Official 2026 Government MSP Rates:\n• Wheat: ₹2,275 / quintal\n• Rice: ₹2,300 / quintal\n• Mustard: ₹5,650 / quintal';
-      }
-    } else if (query.includes('document') || query.includes('कागद') || query.includes('दस्तावेज')) {
-      if (lang === 'hi') {
-        reply = 'मंडी केंद्र पर आवश्यक दस्तावेज:\n1. आधार कार्ड\n2. बैंक पासबुक की प्रति (DBT भुगतान हेतु)\n3. भूमि रिकॉर्ड (7/12 या खतौनी)\n4. डिजिटल मंडी प्रवेश पास (QR कोड)';
-      } else if (lang === 'mr') {
-        reply = 'खरेदी केंद्रावर लागणारी कागदपत्रे:\n१. आधार कार्ड\n२. बँक पासबुक प्रत (DBT खात्यासाठी)\n३. ७/१२ उतारा / जमिनीची नोंद\n४. डिजिटल मंडी प्रवेश पास (QR कोड)';
-      } else {
-        reply = 'Required documents at Mandi centre:\n1. Aadhaar Card\n2. Bank Passbook copy (for DBT payment)\n3. Land ownership record (7/12 or Khatauni)\n4. Digital Entry Pass QR code';
-      }
-    } else {
-      if (lang === 'hi') {
-        reply = 'नमस्ते! मैं आपका मंडीमित्र सहायक हूँ। वर्तमान में मेरठ अनाज मंडी #14 पर कतार सुचारू रूप से चल रही है। आप कभी भी खरीद स्लॉट बुक कर सकते हैं।';
-      } else if (lang === 'mr') {
-        reply = 'नमस्कार! मी तुमचा मंडीमित्र सहाय्यक आहे. सध्या खरेदी केंद्रांवर रांग सुरळीत चालू आहे. आपण नवीन स्लॉट बुक करू शकता.';
-      } else {
-        reply = 'Hello! I am your MandiMitra Assistant. Centres are currently operating smoothly with low wait times. How can I assist you?';
-      }
+    // Dynamically inject live active token data if farmer has an active token
+    if (typeof window !== 'undefined' && (finalIntent === 'token_live_status' || rawMessage.toLowerCase().includes('token') || rawMessage.includes('टोकन'))) {
+      try {
+        const storedToken = localStorage.getItem('mandimitra_active_token');
+        if (storedToken) {
+          const tok = JSON.parse(storedToken);
+          const tokNum = tok.tokenNumber || 'MM-001';
+          const waitTime = tok.estimatedWaitMinutes || 14;
+          const ahead = tok.farmersAhead ?? 2;
+          const centre = tok.centreName || 'Meerut Grain Mandi #14';
+          finalSource = 'database';
+
+          if (kbResult.language === 'hi') {
+            finalReply = `आपका सक्रिय टोकन ${tokNum} (${centre}) है। वर्तमान में ${ahead} किसान आपसे आगे हैं और अनुमानित प्रतीक्षा समय लगभग ${waitTime} मिनट है।`;
+          } else if (kbResult.language === 'mr') {
+            finalReply = `तुमचा सक्रिय टोकन ${tokNum} (${centre}) आहे. सध्या ${ahead} शेतकरी तुमच्या पुढे आहेत आणि अंदाजे प्रतीक्षा वेळ ${waitTime} मिनिटे आहे.`;
+          } else {
+            finalReply = `Your active token is ${tokNum} at ${centre}. There are ${ahead} farmers ahead of you with an estimated wait time of ~${waitTime} minutes.`;
+          }
+        }
+      } catch (err) {}
     }
 
     return {
-      reply,
-      language: lang,
-      source: 'knowledge_base',
-      intent: 'assistant_response',
+      reply: finalReply,
+      language: kbResult.language,
+      source: finalSource,
+      intent: finalIntent,
+      suggestedQuestions: suggestedQuestions && suggestedQuestions.length > 0
+        ? suggestedQuestions
+        : (DEFAULT_SUGGESTED_QUESTIONS[kbResult.language] || DEFAULT_SUGGESTED_QUESTIONS.en),
     } as unknown as T;
   }
 
