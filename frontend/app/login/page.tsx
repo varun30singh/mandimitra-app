@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native-web';
 import { fetchApi } from '../../lib/api';
+import { useLanguage } from '../../lib/language-context';
 import {
   Wheat,
   Phone,
@@ -28,6 +29,7 @@ import {
 } from 'lucide-react';
 
 function LoginContent() {
+  const { language, t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -189,11 +191,11 @@ function LoginContent() {
       {/* ========================================================= */}
       {view === 'login' && (
         <View style={styles.loginCard}>
-          <Text style={styles.loginHeading}>किसान लॉगिन • Farmer Login</Text>
+          <Text style={styles.loginHeading}>{t('farmer_login_heading')}</Text>
 
           {/* Box 1: Enter Phone Number */}
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Enter Phone Number / फ़ोन नंबर</Text>
+            <Text style={styles.inputLabel}>{t('enter_phone')}</Text>
             <View style={styles.inputWrapper}>
               <View style={styles.inputIconBox}>
                 <Phone size={16} color="#047857" />
@@ -202,7 +204,7 @@ function LoginContent() {
                 value={loginPhone}
                 onChangeText={setLoginPhone}
                 keyboardType="numeric"
-                placeholder="Enter 10-digit mobile number"
+                placeholder={t('phone_placeholder')}
                 placeholderTextColor="#9ca3af"
                 style={styles.textInput}
               />
@@ -211,7 +213,7 @@ function LoginContent() {
 
           {/* Box 2: Enter Password */}
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Enter Password / पासवर्ड</Text>
+            <Text style={styles.inputLabel}>{t('enter_password')}</Text>
             <View style={styles.inputWrapper}>
               <View style={styles.inputIconBox}>
                 <Lock size={16} color="#047857" />
@@ -220,7 +222,7 @@ function LoginContent() {
                 value={loginPassword}
                 onChangeText={setLoginPassword}
                 secureTextEntry={!showLoginPassword}
-                placeholder="Enter your password"
+                placeholder={t('password_placeholder')}
                 placeholderTextColor="#9ca3af"
                 style={styles.textInput}
               />
@@ -249,7 +251,7 @@ function LoginContent() {
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
               <>
-                <Text style={styles.primaryButtonText}>लॉगिन करें • Login</Text>
+                <Text style={styles.primaryButtonText}>{t('login_button')}</Text>
                 <ArrowRight size={18} color="#ffffff" />
               </>
             )}
@@ -257,7 +259,7 @@ function LoginContent() {
 
           {/* Bottom Message: New user create new account */}
           <View style={styles.bottomLinkContainer}>
-            <Text style={styles.bottomMessageText}>New user? </Text>
+            <Text style={styles.bottomMessageText}>{t('new_user_question')}</Text>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => {
@@ -266,7 +268,7 @@ function LoginContent() {
                 setView('register');
               }}
             >
-              <Text style={styles.createAccountLink}>Create new account</Text>
+              <Text style={styles.createAccountLink}>{t('create_new_account')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -278,15 +280,13 @@ function LoginContent() {
       {view === 'register' && (
         <View style={styles.loginCard}>
           <View style={styles.registerHeader}>
-            <Text style={styles.loginHeading}>नया खाता बनाएँ • Create Account</Text>
-            <Text style={styles.registerSub}>
-              Enter your details to register as a verified farmer
-            </Text>
+            <Text style={styles.loginHeading}>{t('create_account_heading')}</Text>
+            <Text style={styles.registerSub}>{t('create_account_sub')}</Text>
           </View>
 
           {/* 1. Name */}
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Name / पूरा नाम</Text>
+            <Text style={styles.inputLabel}>{t('name_field')}</Text>
             <View style={styles.inputWrapper}>
               <View style={styles.inputIconBox}>
                 <User size={16} color="#047857" />
@@ -303,7 +303,7 @@ function LoginContent() {
 
           {/* 2. Aadhaar Card Number */}
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Aadhaar Card Number / आधार कार्ड नंबर</Text>
+            <Text style={styles.inputLabel}>{t('aadhaar_field')}</Text>
             <View style={styles.inputWrapper}>
               <View style={styles.inputIconBox}>
                 <CreditCard size={16} color="#047857" />
@@ -322,7 +322,7 @@ function LoginContent() {
 
           {/* 3. Phone Number */}
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Phone Number / फ़ोन नंबर</Text>
+            <Text style={styles.inputLabel}>{t('phone_field')}</Text>
             <View style={styles.inputWrapper}>
               <View style={styles.inputIconBox}>
                 <Phone size={16} color="#047857" />
@@ -341,7 +341,7 @@ function LoginContent() {
 
           {/* 4. Password */}
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Password / पासवर्ड</Text>
+            <Text style={styles.inputLabel}>{t('password_field')}</Text>
             <View style={styles.inputWrapper}>
               <View style={styles.inputIconBox}>
                 <Lock size={16} color="#047857" />
@@ -370,7 +370,7 @@ function LoginContent() {
 
           {/* 5. Re-Password */}
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Re-enter Password / पासवर्ड पुनः दर्ज करें</Text>
+            <Text style={styles.inputLabel}>{t('re_password_field')}</Text>
             <View style={styles.inputWrapper}>
               <View style={styles.inputIconBox}>
                 <Lock size={16} color="#047857" />
@@ -388,7 +388,7 @@ function LoginContent() {
 
           {/* 6. Area where he is living */}
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Area where living / रहने का क्षेत्र (गाँव / तहसील)</Text>
+            <Text style={styles.inputLabel}>{t('area_field')}</Text>
             <View style={styles.inputWrapper}>
               <View style={styles.inputIconBox}>
                 <MapPin size={16} color="#047857" />
@@ -414,7 +414,7 @@ function LoginContent() {
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
               <>
-                <Text style={styles.primaryButtonText}>सबमिट करें • Submit</Text>
+                <Text style={styles.primaryButtonText}>{t('submit_button')}</Text>
                 <ArrowRight size={18} color="#ffffff" />
               </>
             )}
@@ -422,7 +422,7 @@ function LoginContent() {
 
           {/* Back to Login Link */}
           <View style={styles.bottomLinkContainer}>
-            <Text style={styles.bottomMessageText}>Already have an account? </Text>
+            <Text style={styles.bottomMessageText}>{t('already_have_account')}</Text>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => {
@@ -430,7 +430,7 @@ function LoginContent() {
                 setView('login');
               }}
             >
-              <Text style={styles.createAccountLink}>Login here</Text>
+              <Text style={styles.createAccountLink}>{t('login_here')}</Text>
             </TouchableOpacity>
           </View>
         </View>

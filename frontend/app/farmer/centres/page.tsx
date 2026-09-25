@@ -24,17 +24,13 @@ export default function FarmerCentresPage() {
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.pageTitle}>{t('nearby_centres')}</Text>
-          <Text style={styles.pageSubtitle}>
-            Real-time live queue and wait times across all mandis
-          </Text>
+          <Text style={styles.pageSubtitle}>{t('nearby_sub')}</Text>
         </View>
 
         <Link href="/farmer/recommendation" style={{ textDecoration: 'none' }}>
           <View style={styles.aiPickButton}>
             <Sparkles size={13} color="#047857" />
-            <Text style={styles.aiPickButtonText}>
-              {language === 'hi' ? 'स्मार्ट सुझाव' : 'AI Pick'}
-            </Text>
+            <Text style={styles.aiPickButtonText}>{t('ai_pick')}</Text>
           </View>
         </Link>
       </View>
@@ -43,6 +39,15 @@ export default function FarmerCentresPage() {
         {centres.map((c) => {
           const isFull = c.waitLevel === 'Full';
           const isBusy = c.waitLevel === 'Busy' || c.waitLevel === 'Moderate';
+
+          const waitLabel =
+            c.waitLevel === 'Low'
+              ? t('wait_low')
+              : c.waitLevel === 'Busy'
+              ? t('wait_busy')
+              : c.waitLevel === 'Moderate'
+              ? t('wait_moderate')
+              : t('wait_full');
 
           return (
             <View key={c.id} style={styles.centreCard}>
@@ -55,7 +60,7 @@ export default function FarmerCentresPage() {
                   <View style={styles.metaRow}>
                     <MapPin size={12} color="#047857" />
                     <Text style={styles.metaText}>
-                      {c.distanceKm} km away • {c.taluka}
+                      {c.distanceKm} km {t('away')} • {c.taluka}
                     </Text>
                   </View>
                 </View>
@@ -80,7 +85,7 @@ export default function FarmerCentresPage() {
                         : styles.waitLevelTextLow,
                     ]}
                   >
-                    {c.waitLevel}
+                    {waitLabel}
                   </Text>
                 </View>
               </View>
@@ -88,28 +93,30 @@ export default function FarmerCentresPage() {
               {/* 4 Metric Boxes */}
               <View style={styles.metricsGrid}>
                 <View style={styles.metricBox}>
-                  <Text style={styles.metricLabel}>Queue</Text>
+                  <Text style={styles.metricLabel}>{t('queue')}</Text>
                   <Text style={styles.metricVal}>{c.currentQueue}</Text>
                 </View>
                 <View style={styles.metricBox}>
-                  <Text style={styles.metricLabel}>Wait</Text>
+                  <Text style={styles.metricLabel}>{t('wait')}</Text>
                   <Text style={styles.metricValGreen}>~{c.estimatedWaitMinutes}m</Text>
                 </View>
                 <View style={styles.metricBox}>
-                  <Text style={styles.metricLabel}>Capacity</Text>
+                  <Text style={styles.metricLabel}>{t('capacity')}</Text>
                   <Text style={styles.metricVal}>{c.capacityUtilization}%</Text>
                 </View>
                 <View style={styles.metricBox}>
-                  <Text style={styles.metricLabel}>Slots</Text>
+                  <Text style={styles.metricLabel}>{t('open_slots')}</Text>
                   <Text style={styles.metricValGreen}>{c.availableSlots}</Text>
                 </View>
               </View>
 
               <View style={styles.cardFooter}>
-                <Text style={styles.speedLabel}>Speed: ~{c.processingSpeed}m/farmer</Text>
+                <Text style={styles.speedLabel}>
+                  {t('speed')}: ~{c.processingSpeed} {t('per_farmer')}
+                </Text>
                 <Link href={`/farmer/book?centreId=${c.id}`} style={{ textDecoration: 'none' }}>
                   <View style={styles.bookButton}>
-                    <Text style={styles.bookButtonText}>Book Slot</Text>
+                    <Text style={styles.bookButtonText}>{t('book_slot')}</Text>
                     <ArrowRight size={12} color="#ffffff" />
                   </View>
                 </Link>

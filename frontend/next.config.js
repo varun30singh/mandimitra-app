@@ -38,7 +38,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:4000/api/:path*',
+        destination: 'https://mandi-mitra-backend-l38w.onrender.com/api/:path*',
       },
     ];
   },

@@ -73,10 +73,8 @@ function TokenTrackerContent() {
       {/* Header */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.syncTag}>● Real-Time Queue Sync</Text>
-          <Text style={styles.pageTitle}>
-            {language === 'hi' ? 'मेरा डिजिटल टोकन' : (language === 'mr' ? 'माझा डिजिटल टोकन' : 'My Digital Token')}
-          </Text>
+          <Text style={styles.syncTag}>● {t('live_queue_sync')}</Text>
+          <Text style={styles.pageTitle}>{t('my_digital_token')}</Text>
         </View>
 
         <TouchableOpacity
@@ -86,7 +84,7 @@ function TokenTrackerContent() {
           accessibilityLabel="Refresh Token Status"
         >
           <RefreshCw size={13} color="#047857" />
-          <Text style={styles.refreshButtonText}>Refresh</Text>
+          <Text style={styles.refreshButtonText}>{t('refresh')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -98,14 +96,10 @@ function TokenTrackerContent() {
         <View style={styles.qrCard}>
           <View style={styles.qrBadge}>
             <QrCode size={14} color="#047857" />
-            <Text style={styles.qrBadgeText}>MANDI ENTRY PASS QR</Text>
+            <Text style={styles.qrBadgeText}>{t('mandi_entry_pass')}</Text>
           </View>
 
-          <Text style={styles.qrInstructions}>
-            {language === 'hi'
-              ? 'मंडी प्रवेश द्वार पर यह डिजिटल पास दिखाएँ।'
-              : 'Show this digital pass at the entrance weighbridge gate.'}
-          </Text>
+          <Text style={styles.qrInstructions}>{t('pass_instructions')}</Text>
 
           {/* QR Box */}
           <View style={styles.qrOuterBox}>
@@ -137,11 +131,7 @@ function TokenTrackerContent() {
               ) : (
                 <>
                   <Truck size={16} color="#ffffff" />
-                  <Text style={styles.checkInButtonText}>
-                    {language === 'hi'
-                      ? 'मैं मंडी पहुँच गया हूँ (चेक-इन)'
-                      : 'I Have Arrived at Mandi (Check In)'}
-                  </Text>
+                  <Text style={styles.checkInButtonText}>{t('i_have_arrived')}</Text>
                 </>
               )}
             </TouchableOpacity>

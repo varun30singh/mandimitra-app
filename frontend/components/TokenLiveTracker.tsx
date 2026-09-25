@@ -32,18 +32,8 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
         <View style={styles.emptyIconBox}>
           <Clock size={24} color="#047857" />
         </View>
-        <Text style={styles.emptyTitle}>
-          {language === 'hi'
-            ? 'आज के लिए कोई सक्रिय टोकन नहीं'
-            : language === 'mr'
-            ? 'आजसाठी कोणताही सक्रिय टोकन नाही'
-            : 'No Active Procurement Token Today'}
-        </Text>
-        <Text style={styles.emptySubtitle}>
-          {language === 'hi'
-            ? 'बिना इंतज़ार अपनी फसल बेचने के लिए स्मार्ट केंद्र चुनें और टोकन स्लॉट बुक करें।'
-            : 'Avoid waiting in long mandi lines. Schedule a guaranteed appointment slot.'}
-        </Text>
+        <Text style={styles.emptyTitle}>{t('no_active_token')}</Text>
+        <Text style={styles.emptySubtitle}>{t('no_token_sub')}</Text>
         <View style={styles.emptyActions}>
           <Link href="/farmer/book" style={{ textDecoration: 'none' }}>
             <View style={styles.bookButton}>
@@ -103,9 +93,7 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
             )}
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerBadge}>
-              {language === 'hi' ? 'प्रस्थान सलाह' : 'Departure Guide'}
-            </Text>
+            <Text style={styles.bannerBadge}>{t('departure_guide')}</Text>
             <Text style={styles.bannerTitle}>{statusMessage}</Text>
             <Text style={styles.bannerSub}>{subMessage}</Text>
           </View>
@@ -113,7 +101,7 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
 
         {isDoNotLeave && (
           <View style={styles.departureBox}>
-            <Text style={styles.departureBoxLabel}>Depart At</Text>
+            <Text style={styles.departureBoxLabel}>{t('depart_at')}</Text>
             <Text style={styles.departureBoxTime}>{recommendedDepartureTime}</Text>
           </View>
         )}
@@ -124,7 +112,7 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
         {/* Token Number & Details */}
         <View style={styles.tokenRow}>
           <View>
-            <Text style={styles.tokenLabel}>YOUR TOKEN</Text>
+            <Text style={styles.tokenLabel}>{t('your_token')}</Text>
             <Text style={styles.tokenNumber}>{token.tokenNumber}</Text>
             <View style={styles.mandiLocation}>
               <MapPin size={13} color="#047857" />
@@ -136,7 +124,9 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
             <View style={styles.statusPill}>
               <Text style={styles.statusPillText}>{token.status}</Text>
             </View>
-            <Text style={styles.tokenSlotText}>Slot: {token.appointmentTime}</Text>
+            <Text style={styles.tokenSlotText}>
+              {t('slot_label')}: {token.appointmentTime}
+            </Text>
             <Text style={styles.tokenCropText}>
               {token.booking?.crop} • {token.booking?.quantity} qtl
             </Text>
@@ -148,37 +138,41 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
           <View style={styles.metricCard}>
             <View style={styles.metricHeader}>
               <Users size={12} color="#047857" />
-              <Text style={styles.metricLabel}>Farmers Ahead</Text>
+              <Text style={styles.metricLabel}>{t('farmers_ahead')}</Text>
             </View>
             <Text style={styles.metricValueLarge}>{farmersAhead}</Text>
-            <Text style={styles.metricSub}>Position #{queuePosition}</Text>
+            <Text style={styles.metricSub}>
+              {t('position')} #{queuePosition}
+            </Text>
           </View>
 
           <View style={styles.metricCard}>
             <View style={styles.metricHeader}>
               <Clock size={12} color="#047857" />
-              <Text style={styles.metricLabel}>Est. Wait</Text>
+              <Text style={styles.metricLabel}>{t('est_wait')}</Text>
             </View>
             <Text style={styles.metricValueGreen}>
-              {estimatedWaitMinutes} <Text style={{ fontSize: 13, fontWeight: '500' }}>min</Text>
+              {estimatedWaitMinutes} <Text style={{ fontSize: 13, fontWeight: '500' }}>{t('min')}</Text>
             </Text>
-            <Text style={styles.metricSub}>Turn ~{estimatedCallTime}</Text>
+            <Text style={styles.metricSub}>
+              {t('turn')} {estimatedCallTime}
+            </Text>
           </View>
 
           <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Now Serving</Text>
+            <Text style={styles.metricLabel}>{t('now_serving')}</Text>
             <Text style={styles.metricValueGreenDark}>
               {currentServing ? currentServing.tokenNumber : 'B-035'}
             </Text>
-            <Text style={styles.metricSub}>Counter #1</Text>
+            <Text style={styles.metricSub}>{t('counter')} #1</Text>
           </View>
 
           <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Next in Line</Text>
+            <Text style={styles.metricLabel}>{t('next_in_line')}</Text>
             <Text style={styles.metricValueAmber}>
               {nextInLine ? nextInLine.tokenNumber : 'B-036'}
             </Text>
-            <Text style={styles.metricSub}>Counter #2</Text>
+            <Text style={styles.metricSub}>{t('counter')} #2</Text>
           </View>
         </View>
 

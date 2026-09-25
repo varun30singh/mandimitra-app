@@ -15,7 +15,7 @@ import {
 
 export const MobileBottomNav: React.FC = () => {
   const pathname = usePathname();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   const handleChatbotClick = () => {
     if (typeof window !== 'undefined') {
@@ -23,42 +23,43 @@ export const MobileBottomNav: React.FC = () => {
     }
   };
 
+  // Exactly 5 buttons with Chatbot right in the CENTRE (position 3 out of 5)
   const navButtons = [
     {
       id: 'home',
-      label: language === 'hi' ? 'होम' : (language === 'mr' ? 'मुख्य' : 'Home'),
+      label: t('nav_home'),
       href: '/farmer/dashboard',
       icon: Home,
       isActive: pathname === '/farmer/dashboard' || pathname === '/',
     },
     {
       id: 'book',
-      label: language === 'hi' ? 'स्लॉट बुक' : (language === 'mr' ? 'स्लॉट बुक' : 'Book'),
+      label: t('nav_book'),
       href: '/farmer/book',
       icon: Calendar,
       isActive: pathname === '/farmer/book',
     },
     {
+      id: 'chatbot',
+      label: t('nav_chatbot'),
+      action: handleChatbotClick,
+      icon: MessageSquare,
+      isSpecial: true,
+      isActive: false,
+    },
+    {
       id: 'centres',
-      label: language === 'hi' ? 'मंडी केंद्र' : (language === 'mr' ? 'खरेदी केंद्र' : 'Centres'),
+      label: t('nav_centres'),
       href: '/farmer/centres',
       icon: MapPin,
       isActive: pathname === '/farmer/centres',
     },
     {
       id: 'recent',
-      label: language === 'hi' ? 'मेरा टोकन' : (language === 'mr' ? 'माझा टोकन' : 'My Token'),
+      label: t('nav_token'),
       href: '/farmer/token',
       icon: Clock,
       isActive: pathname === '/farmer/token',
-    },
-    {
-      id: 'chatbot',
-      label: language === 'hi' ? 'सहायक' : (language === 'mr' ? 'सहाय्यक' : 'Chatbot'),
-      action: handleChatbotClick,
-      icon: MessageSquare,
-      isSpecial: true,
-      isActive: false,
     },
   ];
 
@@ -79,7 +80,7 @@ export const MobileBottomNav: React.FC = () => {
                 accessibilityLabel={item.label}
               >
                 <View style={styles.specialButtonCircle}>
-                  <Icon size={18} color="#fde047" />
+                  <Icon size={19} color="#fde047" />
                 </View>
                 <Text style={styles.specialButtonLabel}>{item.label}</Text>
               </TouchableOpacity>
@@ -118,7 +119,7 @@ const styles = RNStyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#d1fae5',
     paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     shadowColor: '#064e3b',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.08,
@@ -167,9 +168,9 @@ const styles = RNStyleSheet.create({
     color: '#064e3b',
   },
   specialButtonCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#047857',
     alignItems: 'center',
     justifyContent: 'center',
@@ -184,7 +185,7 @@ const styles = RNStyleSheet.create({
   },
   specialButtonLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#064e3b',
     marginTop: 1,
     textAlign: 'center',

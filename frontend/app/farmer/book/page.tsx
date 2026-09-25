@@ -40,10 +40,10 @@ function BookSlotContent() {
 
   // Available crop options
   const cropOptions = [
-    { label: 'Wheat / गेहूँ (MSP: ₹2,275)', value: 'Wheat' },
-    { label: 'Onion / प्याज (Graded Red)', value: 'Onion' },
-    { label: 'Soybean / सोयाबीन (MSP: ₹4,892)', value: 'Soybean' },
-    { label: 'Gram (Chana) / चना (MSP: ₹5,440)', value: 'Gram' },
+    { label: t('crop_wheat'), value: 'Wheat' },
+    { label: t('crop_onion'), value: 'Onion' },
+    { label: t('crop_soybean'), value: 'Soybean' },
+    { label: t('crop_gram'), value: 'Gram' },
   ];
 
   // Load centres
@@ -107,14 +107,8 @@ function BookSlotContent() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>
-          {language === 'hi' ? 'खरीद स्लॉट बुकिंग' : (language === 'mr' ? 'खरेदी स्लॉट बुकिंग' : 'Book Procurement Slot')}
-        </Text>
-        <Text style={styles.subtitle}>
-          {language === 'hi'
-            ? 'अपनी पसंद का केंद्र, फसल और 30-मिनट का स्लॉट चुनें। टोकन तुरंत जारी होगा।'
-            : 'Select centre, crop, and guaranteed 30-minute arrival window.'}
-        </Text>
+        <Text style={styles.title}>{t('book_procurement_slot')}</Text>
+        <Text style={styles.subtitle}>{t('book_sub')}</Text>
       </View>
 
       {error && (
@@ -131,13 +125,9 @@ function BookSlotContent() {
           <View style={styles.stepHeader}>
             <View style={styles.stepTitleRow}>
               <MapPin size={14} color="#047857" />
-              <Text style={styles.stepTitle}>
-                1. {language === 'hi' ? 'खरीद केंद्र चुनें' : 'Select Procurement Centre'}
-              </Text>
+              <Text style={styles.stepTitle}>{t('step_1_centre')}</Text>
             </View>
-            <Text style={styles.stepHint}>
-              {language === 'hi' ? 'अनुशंसित: केंद्र B' : 'Recommended: Centre B'}
-            </Text>
+            <Text style={styles.stepHint}>{t('recommended_centre_b')}</Text>
           </View>
 
           <View style={styles.centresList}>
@@ -155,7 +145,7 @@ function BookSlotContent() {
                   {isRecommended && (
                     <View style={styles.bestChoiceBadge}>
                       <Sparkles size={10} color="#064e3b" />
-                      <Text style={styles.bestChoiceText}>Best Choice</Text>
+                      <Text style={styles.bestChoiceText}>{t('best_choice')}</Text>
                     </View>
                   )}
                   <Text style={styles.centreTileName}>{c.name}</Text>
@@ -163,9 +153,9 @@ function BookSlotContent() {
                   <View style={styles.centreTileMeta}>
                     <Text style={styles.metaItem}>{c.distanceKm} km</Text>
                     <Text style={styles.bullet}>•</Text>
-                    <Text style={styles.metaItem}>Queue: {c.currentQueue}</Text>
+                    <Text style={styles.metaItem}>{t('queue')}: {c.currentQueue}</Text>
                     <Text style={styles.bullet}>•</Text>
-                    <Text style={styles.metaItem}>Wait: ~{c.estimatedWaitMinutes}m</Text>
+                    <Text style={styles.metaItem}>{t('wait')}: ~{c.estimatedWaitMinutes}m</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -177,9 +167,7 @@ function BookSlotContent() {
         <View style={styles.stepSection}>
           <View style={styles.stepTitleRow}>
             <Wheat size={14} color="#047857" />
-            <Text style={styles.stepTitle}>
-              2. {language === 'hi' ? 'फसल एवं मात्रा' : 'Crop & Quantity'}
-            </Text>
+            <Text style={styles.stepTitle}>{t('step_2_crop')}</Text>
           </View>
 
           <View style={styles.cropSelectorRow}>
@@ -198,9 +186,7 @@ function BookSlotContent() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              {language === 'hi' ? 'अनुमानित मात्रा (क्विंटल)' : 'Approx Quantity (Quintals)'}
-            </Text>
+            <Text style={styles.inputLabel}>{t('approx_quantity')}</Text>
             <TextInput
               value={quantity}
               onChangeText={setQuantity}
@@ -217,17 +203,15 @@ function BookSlotContent() {
           <View style={styles.stepHeader}>
             <View style={styles.stepTitleRow}>
               <Clock size={14} color="#047857" />
-              <Text style={styles.stepTitle}>
-                3. {language === 'hi' ? '30-मिनट का स्लॉट चुनें' : 'Select 30-Min Arrival Slot'}
-              </Text>
+              <Text style={styles.stepTitle}>{t('step_3_slot')}</Text>
             </View>
-            <Text style={styles.stepHint}>Today</Text>
+            <Text style={styles.stepHint}>{t('today')}</Text>
           </View>
 
           {loadingSlots ? (
             <View style={styles.loadingBox}>
               <ActivityIndicator size="small" color="#047857" />
-              <Text style={styles.loadingText}>Loading available slots...</Text>
+              <Text style={styles.loadingText}>{t('loading_slots')}</Text>
             </View>
           ) : (
             <View style={styles.slotsGrid}>
@@ -284,7 +268,7 @@ function BookSlotContent() {
                           isSelected ? styles.slotSpotsSelected : styles.slotSpotsDefault,
                         ]}
                       >
-                        {s.remainingCapacity} spots
+                        {s.remainingCapacity} {t('spots')}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -305,16 +289,12 @@ function BookSlotContent() {
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
             <>
-              <Text style={styles.submitButtonText}>
-                {language === 'hi' ? 'पुष्टि करें एवं टोकन प्राप्त करें' : 'Confirm & Generate Token'}
-              </Text>
+              <Text style={styles.submitButtonText}>{t('confirm_generate_token')}</Text>
               <ArrowRight size={16} color="#ffffff" />
             </>
           )}
         </TouchableOpacity>
-        <Text style={styles.footerGuarantees}>
-          ✓ Instant digital token • Anti-overbooking buffer protected
-        </Text>
+        <Text style={styles.footerGuarantees}>{t('instant_guarantee')}</Text>
       </View>
     </ScrollView>
   );

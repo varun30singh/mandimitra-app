@@ -54,7 +54,7 @@ export default function FarmerDashboard() {
           <View style={styles.greetingTagRow}>
             <Text style={styles.greetingTagText}>{t('good_morning')},</Text>
             <View style={styles.verifiedBadge}>
-              <Text style={styles.verifiedBadgeText}>✓ Verified</Text>
+              <Text style={styles.verifiedBadgeText}>{t('verified')}</Text>
             </View>
           </View>
 
@@ -66,7 +66,9 @@ export default function FarmerDashboard() {
               {farmer ? `${farmer.village}, ${farmer.taluka}` : 'Pimpalgaon, Niphad'}
             </Text>
             <Text style={styles.bullet}>•</Text>
-            <Text style={styles.cropText}>गेहूँ (Wheat)</Text>
+            <Text style={styles.cropText}>
+              {language === 'mr' ? 'गहू' : language === 'hi' ? 'गेहूँ' : 'Wheat'}
+            </Text>
           </View>
         </View>
 
@@ -88,7 +90,7 @@ export default function FarmerDashboard() {
             <Wheat size={16} color="#047857" />
             <Text style={styles.sectionTitle}>{t('your_procurement')}</Text>
           </View>
-          <Text style={styles.syncText}>Live Queue Sync</Text>
+          <Text style={styles.syncText}>{t('live_queue_sync')}</Text>
         </View>
 
         <TokenLiveTracker
@@ -105,7 +107,7 @@ export default function FarmerDashboard() {
             <Calendar size={20} color="#fde047" style={{ marginBottom: 6 }} />
             <View>
               <Text style={styles.primaryActionTitle}>{t('book_slot')}</Text>
-              <Text style={styles.primaryActionSub}>30-min guaranteed</Text>
+              <Text style={styles.primaryActionSub}>{t('book_slot_sub')}</Text>
             </View>
           </View>
         </Link>
@@ -114,10 +116,8 @@ export default function FarmerDashboard() {
           <View style={styles.secondaryActionCard}>
             <Sparkles size={20} color="#047857" style={{ marginBottom: 6 }} />
             <View>
-              <Text style={styles.secondaryActionTitle}>
-                {language === 'hi' ? 'सर्वश्रेष्ठ मंडी' : 'Best Mandi'}
-              </Text>
-              <Text style={styles.secondaryActionSub}>Zero wait prediction</Text>
+              <Text style={styles.secondaryActionTitle}>{t('best_mandi')}</Text>
+              <Text style={styles.secondaryActionSub}>{t('zero_wait_prediction')}</Text>
             </View>
           </View>
         </Link>
@@ -131,7 +131,7 @@ export default function FarmerDashboard() {
             <Text style={styles.sectionTitle}>{t('nearby_centres')}</Text>
           </View>
           <Link href="/farmer/centres" style={{ textDecoration: 'none' }}>
-            <Text style={styles.viewAllText}>View All →</Text>
+            <Text style={styles.viewAllText}>{t('view_all')}</Text>
           </Link>
         </View>
 
@@ -140,13 +140,22 @@ export default function FarmerDashboard() {
             const isFull = c.waitLevel === 'Full';
             const isBusy = c.waitLevel === 'Busy' || c.waitLevel === 'Moderate';
 
+            const waitLabel =
+              c.waitLevel === 'Low'
+                ? t('wait_low')
+                : c.waitLevel === 'Busy'
+                ? t('wait_busy')
+                : c.waitLevel === 'Moderate'
+                ? t('wait_moderate')
+                : t('wait_full');
+
             return (
               <View key={c.id} style={styles.centreCard}>
                 <View style={styles.centreCardHeader}>
                   <View>
                     <Text style={styles.centreName}>{c.name}</Text>
                     <View style={styles.centreMetaRow}>
-                      <Text style={styles.centreDistance}>{c.distanceKm} km away</Text>
+                      <Text style={styles.centreDistance}>{c.distanceKm} km {t('away')}</Text>
                       <Text style={styles.bullet}>•</Text>
                       <Text style={styles.centreTaluka}>{c.taluka}</Text>
                     </View>
@@ -172,7 +181,7 @@ export default function FarmerDashboard() {
                           : styles.waitBadgeTextLow,
                       ]}
                     >
-                      {c.waitLevel}
+                      {waitLabel}
                     </Text>
                   </View>
                 </View>
@@ -180,24 +189,26 @@ export default function FarmerDashboard() {
                 {/* 3 Metric Pills */}
                 <View style={styles.centreMetricsRow}>
                   <View style={styles.centreMetricBox}>
-                    <Text style={styles.centreMetricLabel}>Queue</Text>
+                    <Text style={styles.centreMetricLabel}>{t('queue')}</Text>
                     <Text style={styles.centreMetricValue}>{c.currentQueue}</Text>
                   </View>
                   <View style={styles.centreMetricBox}>
-                    <Text style={styles.centreMetricLabel}>Est. Wait</Text>
+                    <Text style={styles.centreMetricLabel}>{t('est_wait')}</Text>
                     <Text style={styles.centreMetricValueGreen}>~{c.estimatedWaitMinutes}m</Text>
                   </View>
                   <View style={styles.centreMetricBox}>
-                    <Text style={styles.centreMetricLabel}>Open Slots</Text>
+                    <Text style={styles.centreMetricLabel}>{t('open_slots')}</Text>
                     <Text style={styles.centreMetricValue}>{c.availableSlots}</Text>
                   </View>
                 </View>
 
                 <View style={styles.centreCardFooter}>
-                  <Text style={styles.speedText}>Speed: ~{c.processingSpeed}m/farmer</Text>
+                  <Text style={styles.speedText}>
+                    {t('speed')}: ~{c.processingSpeed} {t('per_farmer')}
+                  </Text>
                   <Link href={`/farmer/book?centreId=${c.id}`} style={{ textDecoration: 'none' }}>
                     <View style={styles.selectButton}>
-                      <Text style={styles.selectButtonText}>Select</Text>
+                      <Text style={styles.selectButtonText}>{t('select')}</Text>
                       <ArrowRight size={12} color="#ffffff" />
                     </View>
                   </Link>
