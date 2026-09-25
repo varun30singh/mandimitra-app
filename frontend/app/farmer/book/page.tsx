@@ -93,43 +93,41 @@ function BookSlotContent() {
     }
   };
 
-  const selectedCentre = centres.find((c) => c.id === selectedCentreId);
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 bg-white text-emerald-950">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-3xl font-black text-slate-900 font-serif">
-          {language === 'hi' ? 'खरीद अपॉइंटमेंट एवं स्लॉट बुकिंग' : (language === 'mr' ? 'खरेदी अपॉइंटमेंट व स्लॉट बुकिंग' : 'Dynamic Procurement Slot Booking')}
+      <div className="px-1 space-y-0.5">
+        <h1 className="text-xl font-black text-emerald-950 font-serif">
+          {language === 'hi' ? 'खरीद स्लॉट बुकिंग' : (language === 'mr' ? 'खरेदी स्लॉट बुकिंग' : 'Book Procurement Slot')}
         </h1>
-        <p className="text-sm text-slate-700">
+        <p className="text-xs text-emerald-700">
           {language === 'hi'
             ? 'अपनी पसंद का केंद्र, फसल और 30-मिनट का स्लॉट चुनें। टोकन तुरंत जारी होगा।'
-            : 'Select your preferred mandi centre, crop, and guaranteed 30-minute arrival window.'}
+            : 'Select centre, crop, and guaranteed 30-minute arrival window.'}
         </p>
       </div>
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4 flex items-center gap-3 text-sm">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-3 flex items-center gap-2 text-xs">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleBooking} className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-sm space-y-8">
+      <form onSubmit={handleBooking} className="bg-white rounded-3xl p-4 sm:p-5 border border-emerald-100 shadow-xs space-y-5">
         {/* Step 1: Select Centre */}
-        <div className="space-y-3">
-          <label className="block text-sm font-bold text-slate-900 flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-emerald-600" />
+        <div className="space-y-2.5">
+          <label className="text-xs font-bold text-emerald-950 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
               1. {language === 'hi' ? 'खरीद केंद्र चुनें' : 'Select Procurement Centre'}
             </span>
-            <span className="text-xs text-emerald-700 font-normal">
-              {language === 'hi' ? 'अनुशंसित: मंडी केंद्र B' : 'Recommended: Mandi Centre B'}
+            <span className="text-[10px] text-emerald-700 font-medium">
+              {language === 'hi' ? 'अनुशंसित: केंद्र B' : 'Recommended: Centre B'}
             </span>
           </label>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-2">
             {centres.map((c) => {
               const selected = c.id === selectedCentreId;
               const isRecommended = c.code === 'MANDI-NPH';
@@ -138,20 +136,20 @@ function BookSlotContent() {
                 <div
                   key={c.id}
                   onClick={() => setSelectedCentreId(c.id)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition relative ${
+                  className={`p-3 rounded-2xl border cursor-pointer transition relative ${
                     selected
-                      ? 'border-emerald-600 bg-emerald-50/60 ring-2 ring-emerald-500'
-                      : 'border-slate-200 hover:border-emerald-300 hover:bg-slate-50'
+                      ? 'border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-500'
+                      : 'border-emerald-100 hover:bg-emerald-50/30'
                   }`}
                 >
                   {isRecommended && (
-                    <span className="absolute top-3 right-3 text-[10px] bg-amber-400 text-emerald-950 font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                    <span className="absolute top-2.5 right-2.5 text-[9px] bg-amber-400 text-emerald-950 font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
                       <Sparkles className="w-2.5 h-2.5" /> Best Choice
                     </span>
                   )}
-                  <h4 className="font-bold text-slate-900 text-sm">{c.name}</h4>
-                  <p className="text-xs text-slate-700 mt-0.5">{c.address}, {c.taluka}</p>
-                  <div className="mt-2 flex items-center gap-3 text-xs text-emerald-800 font-semibold">
+                  <h4 className="font-bold text-emerald-950 text-xs sm:text-sm">{c.name}</h4>
+                  <p className="text-[11px] text-emerald-700 mt-0.5">{c.address}, {c.taluka}</p>
+                  <div className="mt-1.5 flex items-center gap-2 text-[11px] text-emerald-800 font-semibold">
                     <span>{c.distanceKm} km</span>
                     <span>•</span>
                     <span>Queue: {c.currentQueue}</span>
@@ -165,16 +163,16 @@ function BookSlotContent() {
         </div>
 
         {/* Step 2: Produce & Quantity */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Wheat className="w-4 h-4 text-emerald-600" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+              <Wheat className="w-3.5 h-3.5 text-emerald-600" />
               2. {language === 'hi' ? 'फसल प्रकार' : 'Crop Type'}
             </label>
             <select
               value={crop}
               onChange={(e) => setCrop(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+              className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-2.5 text-xs font-medium text-emerald-950 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
             >
               <option value="Wheat">Wheat / गेहूँ (MSP: ₹2,275/qtl)</option>
               <option value="Onion">Onion / प्याज (Graded Red)</option>
@@ -185,8 +183,8 @@ function BookSlotContent() {
             </select>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-slate-900">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-emerald-950 block">
               3. {language === 'hi' ? 'अनुमानित मात्रा (क्विंटल)' : 'Approx Quantity (Quintals)'}
             </label>
             <input
@@ -195,28 +193,28 @@ function BookSlotContent() {
               max="500"
               value={quantity}
               onChange={(e) => setQuantity(parseFloat(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+              className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-2.5 text-xs font-medium text-emerald-950 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
               placeholder="e.g. 85"
             />
           </div>
         </div>
 
-        {/* Step 3: Dynamic Procurement Slot Selection (Section 11) */}
-        <div className="space-y-3 pt-2">
-          <label className="block text-sm font-bold text-slate-900 flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-600" />
-              4. {language === 'hi' ? '30-मिनट का आगमन स्लॉट चुनें' : 'Select Guaranteed 30-Min Arrival Slot'}
+        {/* Step 3: Dynamic Procurement Slot Selection */}
+        <div className="space-y-2.5 pt-1">
+          <label className="text-xs font-bold text-emerald-950 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-emerald-600" />
+              4. {language === 'hi' ? '30-मिनट का आगमन स्लॉट चुनें' : 'Select 30-Min Arrival Slot'}
             </span>
-            <span className="text-xs text-slate-700">Date: Today</span>
+            <span className="text-[10px] text-emerald-700">Today</span>
           </label>
 
           {loadingSlots ? (
-            <div className="p-8 text-center text-sm text-slate-700">
-              Loading dynamic slot capacity...
+            <div className="p-6 text-center text-xs text-emerald-700">
+              Loading available slots...
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {slots.map((s) => {
                 const isSelected = s.id === selectedSlotId;
                 const isFull = s.status === 'Full';
@@ -228,24 +226,24 @@ function BookSlotContent() {
                     type="button"
                     disabled={isFull}
                     onClick={() => setSelectedSlotId(s.id)}
-                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                    className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
                       isSelected
-                        ? 'border-emerald-600 bg-emerald-700 text-white shadow-md'
+                        ? 'border-emerald-600 bg-emerald-700 text-white shadow-xs'
                         : isFull
-                        ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-60'
+                        ? 'border-emerald-100 bg-emerald-50/30 text-emerald-800/40 cursor-not-allowed opacity-60'
                         : isLimited
-                        ? 'border-amber-300 bg-amber-50/60 hover:border-amber-400 text-slate-800'
-                        : 'border-slate-200 bg-slate-50 hover:border-emerald-400 text-slate-800'
+                        ? 'border-amber-300 bg-amber-50/70 hover:border-amber-400 text-emerald-950'
+                        : 'border-emerald-200 bg-white hover:border-emerald-400 text-emerald-950'
                     }`}
                   >
                     <div>
-                      <div className="font-extrabold text-sm">
+                      <div className="font-extrabold text-xs">
                         {s.startTime} - {s.endTime}
                       </div>
                       <div className="text-[10px] mt-0.5 opacity-80">{s.timeWindow}</div>
                     </div>
 
-                    <div className="mt-2 pt-2 border-t border-current/10 flex items-center justify-between text-[11px] font-semibold">
+                    <div className="mt-2 pt-1.5 border-t border-current/10 flex items-center justify-between text-[10px] font-semibold">
                       <span>{s.status}</span>
                       <span>{s.remainingCapacity} spots</span>
                     </div>
@@ -257,19 +255,18 @@ function BookSlotContent() {
         </div>
 
         {/* Submit CTA */}
-        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="text-xs text-slate-700">
-            ✓ Instant digital token generation & SMS alert • Anti-overbooking buffer protected
-          </div>
-
+        <div className="pt-2 border-t border-emerald-100 space-y-2">
           <button
             type="submit"
             disabled={bookingLoading || !selectedSlotId}
-            className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black px-8 py-3.5 rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-base"
+            className="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold py-3.5 rounded-2xl shadow-xs transition flex items-center justify-center gap-2 text-xs"
           >
             {bookingLoading ? 'Generating Token...' : (language === 'hi' ? 'पुष्टि करें एवं टोकन प्राप्त करें' : 'Confirm & Generate Token')}
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className="w-4 h-4" />
           </button>
+          <p className="text-[10px] text-emerald-700 text-center">
+            ✓ Instant digital token • Anti-overbooking protected
+          </p>
         </div>
       </form>
     </div>
@@ -278,10 +275,8 @@ function BookSlotContent() {
 
 export default function BookSlotPage() {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Suspense fallback={<div className="p-12 text-center text-slate-700">Loading booking wizard...</div>}>
-        <BookSlotContent />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="p-8 text-center text-xs text-emerald-700">Loading booking wizard...</div>}>
+      <BookSlotContent />
+    </Suspense>
   );
 }

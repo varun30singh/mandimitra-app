@@ -12,8 +12,6 @@ import {
   RefreshCw,
   QrCode,
   Truck,
-  PhoneCall,
-  Share2,
 } from 'lucide-react';
 
 function TokenTrackerContent() {
@@ -66,70 +64,48 @@ function TokenTrackerContent() {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header with Live Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4 bg-white text-emerald-950">
+      {/* Header */}
+      <div className="flex items-center justify-between px-1">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-            <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
-              Live Queue Tracking • Active Turn Countdown
-            </span>
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 font-serif mt-1">
-            {language === 'hi' ? 'डिजिटल टोकन एवं आगमन स्टेटस' : (language === 'mr' ? 'डिजिटल टोकन व आगमन स्थिती' : 'Digital Token & Live Queue Tracker')}
+          <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
+            ● Real-Time Queue Sync
+          </span>
+          <h1 className="text-xl font-black text-emerald-950 font-serif">
+            {language === 'hi' ? 'मेरा डिजिटल टोकन' : (language === 'mr' ? 'माझा डिजिटल टोकन' : 'My Digital Token')}
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={loadToken}
-            className="text-xs bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-1.5 transition"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
-            Refresh
-          </button>
-        </div>
+        <button
+          onClick={loadToken}
+          className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3 py-1.5 rounded-xl border border-emerald-200 shadow-2xs flex items-center gap-1.5 transition"
+        >
+          <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
+          Refresh
+        </button>
       </div>
 
       {/* Main Live Card */}
       <TokenLiveTracker tokenData={tokenDetails} onRefresh={loadToken} />
 
-      {/* Digital Mandi Gate Pass / QR Code Card */}
+      {/* Digital Mandi Gate Pass QR Code Card */}
       {tokenDetails && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-2 text-center md:text-left">
-            <div className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 font-mono text-xs px-3 py-1 rounded-md">
-              <QrCode className="w-3.5 h-3.5 text-emerald-700" />
-              MANDI ENTRY PASS QR CODE
-            </div>
-            <h3 className="text-xl font-extrabold text-slate-900">
-              {language === 'hi' ? 'मंडी प्रवेश द्वार पर यह पास दिखाएँ' : 'Scan at Mandi Gate / Weighbridge'}
-            </h3>
-            <p className="text-xs text-slate-700 max-w-md">
-              {language === 'hi'
-                ? 'केंद्र पर पहुँचने पर गेट ऑपरेटर या सेल्फ़-चेकइन कियोस्क पर यह टोकन दिखाएँ।'
-                : 'Present this digital pass at the entrance weighbridge for priority RFID vehicle barcode tag.'}
-            </p>
-
-            <div className="pt-2 flex flex-wrap gap-3">
-              {tokenDetails.token.status === 'BOOKED' && (
-                <button
-                  onClick={handleGateCheckIn}
-                  disabled={checkingIn}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-xs transition flex items-center gap-2"
-                >
-                  <Truck className="w-4 h-4" />
-                  {checkingIn ? 'Checking in...' : (language === 'hi' ? 'मैं मंडी पहुँच गया हूँ (चेक-इन)' : 'I Have Arrived at Mandi (Check In)')}
-                </button>
-              )}
-            </div>
+        <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-xs space-y-4 text-center">
+          <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 font-mono text-[11px] font-bold px-3 py-1 rounded-full border border-emerald-200">
+            <QrCode className="w-3.5 h-3.5 text-emerald-700" />
+            MANDI ENTRY PASS QR
           </div>
 
-          {/* Simulated QR Code Graphic */}
-          <div className="bg-emerald-950 text-white p-5 rounded-2xl flex flex-col items-center justify-center shrink-0 border-4 border-amber-300 shadow-md text-center w-52">
-            <div className="w-32 h-32 bg-white rounded-xl p-2 flex items-center justify-center shadow-inner">
-              <div className="grid grid-cols-6 gap-1 w-full h-full p-1 bg-slate-900 rounded-sm">
+          <p className="text-xs text-emerald-800 max-w-xs mx-auto">
+            {language === 'hi'
+              ? 'मंडी प्रवेश द्वार पर यह डिजिटल पास दिखाएँ।'
+              : 'Show this digital pass at the entrance weighbridge gate.'}
+          </p>
+
+          {/* QR Box */}
+          <div className="bg-emerald-900 text-white p-4 rounded-2xl flex flex-col items-center justify-center shrink-0 border-2 border-emerald-600 shadow-sm mx-auto w-44">
+            <div className="w-28 h-28 bg-white rounded-xl p-2 flex items-center justify-center shadow-inner">
+              <div className="grid grid-cols-6 gap-1 w-full h-full p-1 bg-emerald-950 rounded-xs">
                 {Array.from({ length: 36 }).map((_, i) => (
                   <div
                     key={i}
@@ -143,8 +119,18 @@ function TokenTrackerContent() {
             <div className="mt-2 text-xs font-mono font-bold text-amber-300">
               {tokenDetails.token.tokenNumber}
             </div>
-            <div className="text-[10px] text-emerald-200">MH-GOV-PROC-2026</div>
           </div>
+
+          {tokenDetails.token.status === 'BOOKED' && (
+            <button
+              onClick={handleGateCheckIn}
+              disabled={checkingIn}
+              className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-3 rounded-2xl shadow-xs transition flex items-center justify-center gap-2"
+            >
+              <Truck className="w-4 h-4" />
+              {checkingIn ? 'Checking in...' : (language === 'hi' ? 'मैं मंडी पहुँच गया हूँ (चेक-इन)' : 'I Have Arrived at Mandi (Check In)')}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -153,10 +139,8 @@ function TokenTrackerContent() {
 
 export default function TokenTrackerPage() {
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Suspense fallback={<div className="p-12 text-center text-slate-700">Loading token tracker...</div>}>
-        <TokenTrackerContent />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="p-8 text-center text-xs text-emerald-700">Loading token...</div>}>
+      <TokenTrackerContent />
+    </Suspense>
   );
 }

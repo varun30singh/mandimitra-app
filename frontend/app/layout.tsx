@@ -1,12 +1,20 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { LanguageProvider } from '../lib/language-context';
-import { Navbar } from '../components/Navbar';
+import { MobileHeader } from '../components/MobileHeader';
+import { MobileBottomNav } from '../components/MobileBottomNav';
 import { ChatbotBubble } from '../components/ChatbotBubble';
 
 export const metadata: Metadata = {
-  title: 'MANDIMITRA | Smart Procurement Scheduling & Farmer Assistance Platform',
+  title: 'Mandi Setu (मंडी सेतु) | Smart Procurement & Farmer Assistant',
   description: 'Digital platform to eliminate farmer waiting time at agricultural procurement and mandi centres through smart scheduling, live queue tracking, and AI assistance.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -16,25 +24,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
+      <body className="min-h-screen bg-white text-emerald-950 flex flex-col font-sans antialiased">
         <LanguageProvider>
-          <Navbar />
-          <main className="flex-1 pb-16">{children}</main>
+          {/* Top Mobile Header: Mandi Setu Logo on left, Profile button on right */}
+          <MobileHeader />
+
+          {/* Main Mobile App Container */}
+          <main className="flex-1 w-full max-w-md mx-auto bg-white px-3 sm:px-4 py-4 pb-24">
+            {children}
+          </main>
+
+          {/* Floating AI Chatbot Assistant */}
           <ChatbotBubble />
-          <footer className="bg-emerald-950 text-emerald-200 py-8 border-t border-emerald-900 text-xs">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-white text-sm">MANDIMITRA</span>
-                <span>• Smart India Hackathon 2026</span>
-              </div>
-              <p className="text-emerald-400">
-                "Don't make farmers wait at the mandi. Let the system predict, schedule and guide them."
-              </p>
-              <div className="flex items-center gap-4 text-emerald-300">
-                <span>Toll-Free Helpline: 1800-MANDI-HELP</span>
-              </div>
-            </div>
-          </footer>
+
+          {/* 5-Button Bottom Navigation Bar */}
+          <MobileBottomNav />
         </LanguageProvider>
       </body>
     </html>

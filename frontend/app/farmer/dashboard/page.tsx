@@ -12,11 +12,9 @@ import {
   Calendar,
   Sparkles,
   ArrowRight,
-  TrendingUp,
-  Percent,
-  RefreshCw,
   Wheat,
   UserCheck,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function FarmerDashboard() {
@@ -27,19 +25,15 @@ export default function FarmerDashboard() {
   const [centres, setCentres] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Load demo farmer (Ramesh Kumar - MH-NAS-2026-0812)
   const loadDashboardData = async () => {
     try {
       setRefreshing(true);
-      // Fetch Ramesh profile
       const farmerRes = await fetchApi('/farmers/MH-NAS-2026-0812');
       setFarmer(farmerRes);
 
-      // Fetch Ramesh active token details
       const activeTok = await fetchApi(`/queue/farmer/${farmerRes.id}/active`);
       setTokenData(activeTok);
 
-      // Fetch nearby centres with live operational metrics
       const centresRes = await fetchApi('/centres?lat=20.1700&lng=74.0500');
       setCentres(centresRes);
     } catch (err) {
@@ -55,154 +49,155 @@ export default function FarmerDashboard() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Section: Good Morning, Farmer (Section 7) */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-xs">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-emerald-700 uppercase tracking-wider">
+    <div className="space-y-5 bg-white text-emerald-950">
+      {/* Top Greeting Card */}
+      <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-xs flex items-center justify-between">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
               {t('good_morning')},
             </span>
-            <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-              <UserCheck className="w-3 h-3 text-emerald-600" /> Aadhaar Verified
+            <span className="bg-emerald-100 text-emerald-900 text-[10px] font-bold px-2 py-0.2 rounded-full">
+              ✓ Verified
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 font-serif">
+          <h1 className="text-2xl font-black text-emerald-950 font-serif">
             {farmer ? farmer.fullName : 'Ramesh Kumar'}
           </h1>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-700 pt-1">
-            <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-800 font-medium">
-              ID: {farmer ? farmer.farmerId : 'MH-NAS-2026-0812'}
-            </span>
-            <span>•</span>
+          <div className="flex items-center gap-2 text-xs text-emerald-800">
             <span className="flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-              {farmer ? `${farmer.village}, ${farmer.taluka}` : 'Pimpalgaon, Niphad, Nashik'}
+              {farmer ? `${farmer.village}, ${farmer.taluka}` : 'Pimpalgaon, Niphad'}
             </span>
             <span>•</span>
-            <span>Crop: Wheat (गेहूँ)</span>
+            <span className="font-semibold text-emerald-700">गेहूँ (Wheat)</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={loadDashboardData}
-            disabled={refreshing}
-            className="flex items-center gap-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl transition"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-emerald-600' : ''}`} />
-            {refreshing ? 'Updating live...' : 'Refresh Status'}
-          </button>
-
-          <Link
-            href="/farmer/book"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-xs transition flex items-center gap-2"
-          >
-            <Calendar className="w-4 h-4" /> {t('book_slot')}
-          </Link>
-        </div>
+        <button
+          onClick={loadDashboardData}
+          disabled={refreshing}
+          className="p-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition"
+          title="Refresh"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-emerald-600' : ''}`} />
+        </button>
       </div>
 
-      {/* Main Card: Your Procurement (Section 7) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-            <Wheat className="w-5 h-5 text-emerald-600" />
+      {/* Main Token & Procurement Card */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-base font-black text-emerald-950 flex items-center gap-1.5">
+            <Wheat className="w-4 h-4 text-emerald-600" />
             {t('your_procurement')}
           </h2>
-          <span className="text-xs text-slate-700">Live Queue & Smart Departure</span>
+          <span className="text-[11px] font-bold text-emerald-700">
+            Live Queue Sync
+          </span>
         </div>
 
         <TokenLiveTracker
           tokenData={tokenData}
           onRefresh={loadDashboardData}
+          compact={false}
         />
       </div>
 
-      {/* Nearby Centres List (Section 7) */}
-      <div className="space-y-4 pt-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* Quick Booking Action Strip */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link
+          href="/farmer/book"
+          className="bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold p-4 rounded-2xl shadow-xs transition flex flex-col justify-between"
+        >
+          <Calendar className="w-5 h-5 text-amber-300 mb-2" />
           <div>
-            <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-emerald-600" />
-              {t('nearby_centres')}
-            </h2>
-            <p className="text-xs text-slate-700">
-              Live wait times, queue lengths, processing speed & capacity utilization
-            </p>
+            <div className="text-sm font-black leading-tight">{t('book_slot')}</div>
+            <div className="text-[11px] text-emerald-100 mt-0.5">30-min guaranteed</div>
           </div>
+        </Link>
 
+        <Link
+          href="/farmer/recommendation"
+          className="bg-white hover:bg-emerald-50 active:scale-95 text-emerald-950 font-bold p-4 rounded-2xl border border-emerald-200 shadow-xs transition flex flex-col justify-between"
+        >
+          <Sparkles className="w-5 h-5 text-emerald-600 mb-2" />
+          <div>
+            <div className="text-sm font-black leading-tight">
+              {language === 'hi' ? 'सर्वश्रेष्ठ मंडी चुनें' : 'Best Mandi'}
+            </div>
+            <div className="text-[11px] text-emerald-700 mt-0.5">Zero wait prediction</div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Nearby Centres Cards */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-base font-black text-emerald-950 flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-emerald-600" />
+            {t('nearby_centres')}
+          </h2>
           <Link
-            href="/farmer/recommendation"
-            className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 w-fit"
+            href="/farmer/centres"
+            className="text-xs font-bold text-emerald-700 hover:text-emerald-900"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            {t('get_recommendation')} <ArrowRight className="w-3.5 h-3.5" />
+            View All →
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {centres.map((c) => {
-            let badgeBg = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-            if (c.waitLevel === 'Moderate') badgeBg = 'bg-amber-100 text-amber-800 border-amber-200';
-            else if (c.waitLevel === 'Busy') badgeBg = 'bg-orange-100 text-orange-800 border-orange-200';
-            else if (c.waitLevel === 'Full') badgeBg = 'bg-rose-100 text-rose-800 border-rose-200';
+        <div className="space-y-3">
+          {centres.slice(0, 3).map((c) => {
+            let badgeBg = 'bg-emerald-100 text-emerald-900 border-emerald-300';
+            if (c.waitLevel === 'Moderate') badgeBg = 'bg-amber-100 text-amber-900 border-amber-300';
+            else if (c.waitLevel === 'Busy') badgeBg = 'bg-orange-100 text-orange-900 border-orange-300';
+            else if (c.waitLevel === 'Full') badgeBg = 'bg-rose-100 text-rose-900 border-rose-300';
 
             return (
               <div
                 key={c.id}
-                className="bg-white rounded-2xl p-5 border border-slate-200 hover:border-emerald-300 shadow-2xs hover:shadow-md transition flex flex-col justify-between"
+                className="bg-white rounded-2xl p-4 border border-emerald-100 shadow-xs space-y-3"
               >
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs text-slate-700 font-bold">{c.code}</span>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${badgeBg}`}>
-                      {c.waitLevel}
-                    </span>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-black text-emerald-950">{c.name}</h3>
+                    <div className="text-xs text-emerald-700 flex items-center gap-1 mt-0.5">
+                      <span>{c.distanceKm} km away</span>
+                      <span>•</span>
+                      <span>{c.taluka}</span>
+                    </div>
                   </div>
 
-                  <h3 className="text-base font-bold text-slate-900 mt-2 line-clamp-1">{c.name}</h3>
-                  <div className="text-xs text-slate-700 flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-3 h-3 text-emerald-600" />
-                    <span>{c.distanceKm} km away</span>
-                    <span>•</span>
-                    <span>{c.taluka}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeBg}`}>
+                    {c.waitLevel}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 bg-emerald-50/50 p-2.5 rounded-xl text-center text-xs">
+                  <div>
+                    <span className="text-[10px] text-emerald-800 font-semibold block">Queue</span>
+                    <span className="font-extrabold text-emerald-950">{c.currentQueue}</span>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-100 text-xs">
-                    <div>
-                      <span className="text-[11px] text-slate-700 block">Queue Length:</span>
-                      <span className="text-base font-extrabold text-slate-900">{c.currentQueue} farmers</span>
-                    </div>
-
-                    <div>
-                      <span className="text-[11px] text-slate-700 block">Estimated Wait:</span>
-                      <span className="text-base font-extrabold text-emerald-700">{c.estimatedWaitMinutes} min</span>
-                    </div>
-
-                    <div>
-                      <span className="text-[11px] text-slate-700 block">Capacity Util:</span>
-                      <span className="text-sm font-bold text-slate-800">{c.capacityUtilization}%</span>
-                    </div>
-
-                    <div>
-                      <span className="text-[11px] text-slate-700 block">Open Slots:</span>
-                      <span className="text-sm font-bold text-amber-600">{c.availableSlots} left</span>
-                    </div>
+                  <div>
+                    <span className="text-[10px] text-emerald-800 font-semibold block">Est. Wait</span>
+                    <span className="font-extrabold text-emerald-700">~{c.estimatedWaitMinutes}m</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-emerald-800 font-semibold block">Open Slots</span>
+                    <span className="font-extrabold text-emerald-950">{c.availableSlots}</span>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-700">
+                <div className="flex items-center justify-between pt-1 text-xs">
+                  <span className="text-emerald-700 text-[11px]">
                     Speed: ~{c.processingSpeed}m/farmer
                   </span>
                   <Link
                     href={`/farmer/book?centreId=${c.id}`}
-                    className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1"
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1 text-xs shadow-2xs"
                   >
-                    Select Slot <ArrowRight className="w-3 h-3" />
+                    Select <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               </div>
