@@ -44,7 +44,7 @@ function LoginContent() {
 
   // LOGIN STATE (strictly Phone + Password)
   const [loginPhone, setLoginPhone] = useState('9822012345');
-  const [loginPassword, setLoginPassword] = useState('1234');
+  const [loginPassword, setLoginPassword] = useState('password123');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // REGISTRATION STATE
