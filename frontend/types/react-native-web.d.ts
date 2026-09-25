@@ -40,6 +40,7 @@ declare module 'react-native-web' {
     onChangeText?: (text: string) => void;
     secureTextEntry?: boolean;
     keyboardType?: string;
+    maxLength?: number;
     placeholder?: string;
     placeholderTextColor?: string;
   }

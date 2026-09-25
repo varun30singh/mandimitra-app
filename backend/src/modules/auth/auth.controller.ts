@@ -27,6 +27,21 @@ export class AuthController {
     return successResponse(result);
   }
 
+  @Post('farmer/register')
+  async registerFarmer(
+    @Body()
+    body: {
+      fullName: string;
+      mobile: string;
+      password: string;
+      aadhaarNumber?: string;
+      area?: string;
+    },
+  ) {
+    const result = await this.authService.registerFarmer(body);
+    return successResponse(result);
+  }
+
   @Post('login')
   async loginWithCredentials(@Body() body: { mobile: string; password: string }) {
     const result = await this.authService.loginWithCredentials(body.mobile, body.password);

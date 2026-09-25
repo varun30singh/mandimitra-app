@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   View,
   Text,
@@ -12,240 +12,442 @@ import {
   ActivityIndicator,
 } from 'react-native-web';
 import { fetchApi } from '../../lib/api';
-import { useLanguage } from '../../lib/language-context';
 import {
   Wheat,
   Phone,
+  Lock,
+  User,
+  CreditCard,
+  MapPin,
   ArrowRight,
-  ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
-  const { language } = useLanguage();
+  const searchParams = useSearchParams();
 
-  // Farmer OTP State
-  const [mobile, setMobile] = useState('9822012345');
-  const [otp, setOtp] = useState('123456');
-  const [otpSent, setOtpSent] = useState(false);
+  // Mode: 'login' or 'register'
+  const [view, setView] = useState<'login' | 'register'>('login');
+
+  useEffect(() => {
+    if (searchParams.get('mode') === 'register' || searchParams.get('view') === 'register') {
+      setView('register');
+    }
+  }, [searchParams]);
+
+  // LOGIN STATE (strictly Phone + Password)
+  const [loginPhone, setLoginPhone] = useState('9822012345');
+  const [loginPassword, setLoginPassword] = useState('1234');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+  // REGISTRATION STATE
+  const [regName, setRegName] = useState('');
+  const [regAadhaar, setRegAadhaar] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regRePassword, setRegRePassword] = useState('');
+  const [regArea, setRegArea] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+
+  // Status state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleRequestOtp = async () => {
-    if (!mobile || mobile.length < 10) {
-      setError('Please enter a valid 10-digit mobile number');
+  // HANDLE LOGIN
+  const handleLogin = async () => {
+    if (!loginPhone || loginPhone.trim().length < 10) {
+      setError('Please enter a valid 10-digit phone number');
       return;
     }
-    setLoading(true);
-    setError(null);
-    try {
-      await fetchApi('/auth/farmer/otp/request', {
-        method: 'POST',
-        body: JSON.stringify({ mobile }),
-      });
-      setOtpSent(true);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send OTP');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!otp || otp.length < 4) {
-      setError('Please enter the OTP');
+    if (!loginPassword) {
+      setError('Please enter your password');
       return;
     }
+
     setLoading(true);
     setError(null);
+
     try {
-      const res = await fetchApi('/auth/farmer/otp/verify', {
+      const res = await fetchApi('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ mobile, otp }),
+        body: JSON.stringify({
+          mobile: loginPhone.trim(),
+          password: loginPassword,
+        }),
       });
+
       if (res?.accessToken) {
         localStorage.setItem('mandimitra_token', res.accessToken);
         localStorage.setItem('mandimitra_user', JSON.stringify(res.user));
       }
+
       router.push('/farmer/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Invalid OTP');
+      setError(err.message || 'Invalid phone number or password');
     } finally {
       setLoading(false);
     }
   };
 
-  const quickFarmerLogin = () => {
-    setMobile('9822012345');
-    setOtp('123456');
-    router.push('/farmer/dashboard');
+  // HANDLE REGISTER
+  const handleRegister = async () => {
+    if (!regName.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
+    if (!regAadhaar.trim() || regAadhaar.trim().length < 12) {
+      setError('Please enter a valid 12-digit Aadhaar card number');
+      return;
+    }
+    if (!regPhone.trim() || regPhone.trim().length < 10) {
+      setError('Please enter a valid 10-digit phone number');
+      return;
+    }
+    if (!regPassword || regPassword.length < 4) {
+      setError('Password must be at least 4 characters long');
+      return;
+    }
+    if (regPassword !== regRePassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (!regArea.trim()) {
+      setError('Please enter your village, taluka, or area');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetchApi('/auth/farmer/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          fullName: regName.trim(),
+          mobile: regPhone.trim(),
+          password: regPassword,
+          aadhaarNumber: regAadhaar.trim(),
+          area: regArea.trim(),
+        }),
+      });
+
+      // On submit success: redirect to original login page with phone pre-filled
+      setSuccessMsg('Account created successfully! Please enter your password to login.');
+      setLoginPhone(regPhone.trim());
+      setLoginPassword('');
+      setView('login');
+      // Reset registration form
+      setRegName('');
+      setRegAadhaar('');
+      setRegPhone('');
+      setRegPassword('');
+      setRegRePassword('');
+      setRegArea('');
+    } catch (err: any) {
+      setError(err.message || 'Failed to create account. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Brand Header */}
-      <View style={styles.brandHeader}>
+      {/* Top: ONLY Logo */}
+      <View style={styles.topLogoContainer}>
         <View style={styles.logoTile}>
-          <Wheat size={30} color="#fde047" />
+          <Wheat size={36} color="#fde047" />
         </View>
         <Text style={styles.brandTitle}>MANDI SETU</Text>
-        <Text style={styles.brandSubtitle}>
-          {language === 'hi'
-            ? 'किसान प्रवेश पोर्टल • मंडी सेतु'
-            : (language === 'mr' ? 'शेतकरी लॉगिन पोर्टल • मंडी सेतु' : 'Farmer Access Portal')}
-        </Text>
-        <View style={styles.farmerOnlyBadge}>
-          <ShieldCheck size={13} color="#047857" />
-          <Text style={styles.farmerOnlyBadgeText}>
-            {language === 'hi' ? 'केवल पंजीकृत किसानों के लिए' : 'Exclusively for Farmers'}
-          </Text>
-        </View>
+        <Text style={styles.brandSubtitle}>मंडी सेतु • किसान सेवा</Text>
       </View>
 
+      {/* Success Notification (e.g. after registration) */}
+      {successMsg && (
+        <View style={styles.successBanner}>
+          <CheckCircle2 size={18} color="#047857" style={{ marginTop: 2 }} />
+          <Text style={styles.successText}>{successMsg}</Text>
+        </View>
+      )}
+
+      {/* Error Notification */}
       {error && (
-        <View style={styles.errorBox}>
-          <AlertCircle size={15} color="#991b1b" />
+        <View style={styles.errorBanner}>
+          <AlertCircle size={18} color="#991b1b" style={{ marginTop: 2 }} />
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      {/* Main Login Card */}
-      <View style={styles.card}>
-        {!otpSent ? (
-          <View style={styles.formSection}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                {language === 'hi' ? 'किसान मोबाइल नंबर' : 'Farmer Mobile Number'}
-              </Text>
-              <View style={styles.phoneInputRow}>
-                <View style={styles.countryCodeBox}>
-                  <Text style={styles.countryCodeText}>+91</Text>
-                </View>
-                <TextInput
-                  value={mobile}
-                  onChangeText={setMobile}
-                  keyboardType="numeric"
-                  placeholder="9822012345"
-                  placeholderTextColor="#9ca3af"
-                  style={styles.phoneTextInput}
-                />
-              </View>
-              <Text style={styles.hintText}>
-                {language === 'hi'
-                  ? 'अपने आधार-लिंक्ड 10-अंकीय मोबाइल नंबर से लॉगिन करें।'
-                  : 'Enter your 10-digit Aadhaar-registered mobile number.'}
-              </Text>
-            </View>
+      {/* ========================================================= */}
+      {/* 1. ORIGINAL LOGIN PAGE VIEW                               */}
+      {/* ========================================================= */}
+      {view === 'login' && (
+        <View style={styles.loginCard}>
+          <Text style={styles.loginHeading}>किसान लॉगिन • Farmer Login</Text>
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handleRequestOtp}
-              disabled={loading}
-              style={[styles.primaryButton, loading && styles.buttonDisabled]}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <>
-                  <Text style={styles.primaryButtonText}>
-                    {language === 'hi' ? 'ओटीपी प्राप्त करें' : 'Send OTP'}
-                  </Text>
-                  <ArrowRight size={16} color="#ffffff" />
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.formSection}>
-            <View style={styles.otpNoticeBox}>
-              <CheckCircle2 size={16} color="#047857" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.otpNoticeTitle}>OTP Sent to +91-{mobile}</Text>
-                <Text style={styles.otpNoticeSub}>Demo OTP: 123456</Text>
+          {/* Box 1: Enter Phone Number */}
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Enter Phone Number / फ़ोन नंबर</Text>
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputIconBox}>
+                <Phone size={16} color="#047857" />
               </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                {language === 'hi' ? '6-अंकीय ओटीपी दर्ज करें' : 'Enter 6-Digit OTP'}
-              </Text>
               <TextInput
-                value={otp}
-                onChangeText={setOtp}
+                value={loginPhone}
+                onChangeText={setLoginPhone}
                 keyboardType="numeric"
-                placeholder="123456"
+                placeholder="Enter 10-digit mobile number"
                 placeholderTextColor="#9ca3af"
-                style={styles.otpTextInput}
+                style={styles.textInput}
               />
             </View>
+          </View>
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handleVerifyOtp}
-              disabled={loading}
-              style={[styles.primaryButton, loading && styles.buttonDisabled]}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <>
-                  <Text style={styles.primaryButtonText}>
-                    {language === 'hi' ? 'सत्यापित करें एवं आगे बढ़ें' : 'Verify & Enter App'}
-                  </Text>
-                  <ArrowRight size={16} color="#ffffff" />
-                </>
-              )}
-            </TouchableOpacity>
+          {/* Box 2: Enter Password */}
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Enter Password / पासवर्ड</Text>
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputIconBox}>
+                <Lock size={16} color="#047857" />
+              </View>
+              <TextInput
+                value={loginPassword}
+                onChangeText={setLoginPassword}
+                secureTextEntry={!showLoginPassword}
+                placeholder="Enter your password"
+                placeholderTextColor="#9ca3af"
+                style={styles.textInput}
+              />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowLoginPassword(!showLoginPassword)}
+                style={styles.eyeButton}
+              >
+                {showLoginPassword ? (
+                  <EyeOff size={16} color="#047857" />
+                ) : (
+                  <Eye size={16} color="#047857" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
 
+          {/* Login Submit Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleLogin}
+            disabled={loading}
+            style={[styles.primaryButton, loading && styles.buttonDisabled]}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <>
+                <Text style={styles.primaryButtonText}>लॉगिन करें • Login</Text>
+                <ArrowRight size={18} color="#ffffff" />
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* Bottom Message: New user create new account */}
+          <View style={styles.bottomLinkContainer}>
+            <Text style={styles.bottomMessageText}>New user? </Text>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => setOtpSent(false)}
-              style={styles.backButton}
+              onPress={() => {
+                setError(null);
+                setSuccessMsg(null);
+                setView('register');
+              }}
             >
-              <Text style={styles.backButtonText}>← Change Mobile Number</Text>
+              <Text style={styles.createAccountLink}>Create new account</Text>
             </TouchableOpacity>
           </View>
-        )}
-      </View>
-
-      {/* Instant Demo Farmer Login Card */}
-      <View style={styles.demoCard}>
-        <View style={styles.demoHeader}>
-          <Sparkles size={14} color="#047857" />
-          <Text style={styles.demoTitle}>
-            {language === 'hi' ? 'त्वरित किसान प्रवेश' : 'One-Tap Demo Farmer Login'}
-          </Text>
         </View>
+      )}
 
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={quickFarmerLogin}
-          style={styles.demoFarmerButton}
-        >
-          <View style={styles.demoAvatar}>
-            <Text style={styles.demoAvatarText}>R</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.demoFarmerName}>Ramesh Kumar (रमेश कुमार)</Text>
-            <Text style={styles.demoFarmerMeta}>
-              MH-NAS-2026-0812 • Pimpalgaon, Niphad
+      {/* ========================================================= */}
+      {/* 2. CREATE NEW ACCOUNT (REGISTRATION) VIEW                 */}
+      {/* ========================================================= */}
+      {view === 'register' && (
+        <View style={styles.loginCard}>
+          <View style={styles.registerHeader}>
+            <Text style={styles.loginHeading}>नया खाता बनाएँ • Create Account</Text>
+            <Text style={styles.registerSub}>
+              Enter your details to register as a verified farmer
             </Text>
           </View>
-          <ArrowRight size={16} color="#047857" />
-        </TouchableOpacity>
-      </View>
 
-      {/* Security Guarantee */}
-      <View style={styles.securityBox}>
-        <ShieldCheck size={16} color="#047857" />
-        <Text style={styles.securityText}>
-          Protected by Govt MSP e-Procurement Security Standards
-        </Text>
-      </View>
+          {/* 1. Name */}
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Name / पूरा नाम</Text>
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputIconBox}>
+                <User size={16} color="#047857" />
+              </View>
+              <TextInput
+                value={regName}
+                onChangeText={setRegName}
+                placeholder="e.g. Ramesh Kumar"
+                placeholderTextColor="#9ca3af"
+                style={styles.textInput}
+              />
+            </View>
+          </View>
+
+          {/* 2. Aadhaar Card Number */}
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Aadhaar Card Number / आधार कार्ड नंबर</Text>
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputIconBox}>
+                <CreditCard size={16} color="#047857" />
+              </View>
+              <TextInput
+                value={regAadhaar}
+                onChangeText={setRegAadhaar}
+                keyboardType="numeric"
+                maxLength={12}
+                placeholder="12-digit Aadhaar number"
+                placeholderTextColor="#9ca3af"
+                style={styles.textInput}
+              />
+            </View>
+          </View>
+
+          {/* 3. Phone Number */}
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Phone Number / फ़ोन नंबर</Text>
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputIconBox}>
+                <Phone size={16} color="#047857" />
+              </View>
+              <TextInput
+                value={regPhone}
+                onChangeText={setRegPhone}
+                keyboardType="numeric"
+                maxLength={10}
+                placeholder="10-digit mobile number"
+                placeholderTextColor="#9ca3af"
+                style={styles.textInput}
+              />
+            </View>
+          </View>
+
+          {/* 4. Password */}
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Password / पासवर्ड</Text>
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputIconBox}>
+                <Lock size={16} color="#047857" />
+              </View>
+              <TextInput
+                value={regPassword}
+                onChangeText={setRegPassword}
+                secureTextEntry={!showRegPassword}
+                placeholder="Create password"
+                placeholderTextColor="#9ca3af"
+                style={styles.textInput}
+              />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowRegPassword(!showRegPassword)}
+                style={styles.eyeButton}
+              >
+                {showRegPassword ? (
+                  <EyeOff size={16} color="#047857" />
+                ) : (
+                  <Eye size={16} color="#047857" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* 5. Re-Password */}
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Re-enter Password / पासवर्ड पुनः दर्ज करें</Text>
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputIconBox}>
+                <Lock size={16} color="#047857" />
+              </View>
+              <TextInput
+                value={regRePassword}
+                onChangeText={setRegRePassword}
+                secureTextEntry={!showRegPassword}
+                placeholder="Confirm password"
+                placeholderTextColor="#9ca3af"
+                style={styles.textInput}
+              />
+            </View>
+          </View>
+
+          {/* 6. Area where he is living */}
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Area where living / रहने का क्षेत्र (गाँव / तहसील)</Text>
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputIconBox}>
+                <MapPin size={16} color="#047857" />
+              </View>
+              <TextInput
+                value={regArea}
+                onChangeText={setRegArea}
+                placeholder="e.g. Pimpalgaon Baswant, Niphad"
+                placeholderTextColor="#9ca3af"
+                style={styles.textInput}
+              />
+            </View>
+          </View>
+
+          {/* Submit Registration Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleRegister}
+            disabled={loading}
+            style={[styles.primaryButton, loading && styles.buttonDisabled]}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <>
+                <Text style={styles.primaryButtonText}>सबमिट करें • Submit</Text>
+                <ArrowRight size={18} color="#ffffff" />
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* Back to Login Link */}
+          <View style={styles.bottomLinkContainer}>
+            <Text style={styles.bottomMessageText}>Already have an account? </Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                setError(null);
+                setView('login');
+              }}
+            >
+              <Text style={styles.createAccountLink}>Login here</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </ScrollView>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <View style={{ padding: 40, alignItems: 'center' }}>
+          <ActivityIndicator size="small" color="#047857" />
+        </View>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
 
@@ -254,162 +456,135 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   content: {
-    paddingVertical: 24,
+    paddingVertical: 20,
     paddingHorizontal: 8,
-    gap: 18,
+    gap: 16,
+    maxWidth: 448,
+    marginHorizontal: 'auto',
+    width: '100%',
   },
-  brandHeader: {
+  topLogoContainer: {
     alignItems: 'center',
     gap: 4,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   logoTile: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     backgroundColor: '#047857',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#064e3b',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 6,
+    elevation: 5,
     marginBottom: 6,
   },
   brandTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '900',
     color: '#064e3b',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   brandSubtitle: {
     fontSize: 12,
     fontWeight: '700',
     color: '#047857',
   },
-  farmerOnlyBadge: {
+  successBanner: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#ecfdf5',
-    borderWidth: 1,
-    borderColor: '#a7f3d0',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    marginTop: 6,
-  },
-  farmerOnlyBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#064e3b',
-  },
-  errorBox: {
-    backgroundColor: '#fee2e2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    borderRadius: 14,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  errorText: {
-    color: '#991b1b',
-    fontSize: 11,
-    fontWeight: '700',
-    flex: 1,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#d1fae5',
-    shadowColor: '#064e3b',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  formSection: {
-    gap: 16,
-  },
-  inputGroup: {
-    gap: 6,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#064e3b',
-  },
-  phoneInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#a7f3d0',
-    borderRadius: 14,
-    backgroundColor: '#ffffff',
-    overflow: 'hidden',
-  },
-  countryCodeBox: {
-    backgroundColor: '#ecfdf5',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRightWidth: 1,
-    borderRightColor: '#d1fae5',
-  },
-  countryCodeText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#047857',
-  },
-  phoneTextInput: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#064e3b',
-  },
-  hintText: {
-    fontSize: 10,
-    color: '#047857',
-    marginTop: 2,
-  },
-  otpNoticeBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 10,
     backgroundColor: '#ecfdf5',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#a7f3d0',
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 16,
+    padding: 14,
   },
-  otpNoticeTitle: {
+  successText: {
+    flex: 1,
+    color: '#064e3b',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1.5,
+    borderColor: '#fecaca',
+    borderRadius: 16,
+    padding: 14,
+  },
+  errorText: {
+    flex: 1,
+    color: '#991b1b',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  loginCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 26,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    gap: 16,
+    shadowColor: '#064e3b',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  loginHeading: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#064e3b',
+    textAlign: 'center',
+  },
+  registerHeader: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  registerSub: {
+    fontSize: 11,
+    color: '#047857',
+    textAlign: 'center',
+  },
+  inputBlock: {
+    gap: 6,
+  },
+  inputLabel: {
     fontSize: 12,
     fontWeight: '800',
     color: '#064e3b',
   },
-  otpNoticeSub: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#047857',
-    marginTop: 1,
-  },
-  otpTextInput: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#a7f3d0',
     borderRadius: 14,
+    paddingHorizontal: 12,
+  },
+  inputIconBox: {
+    marginRight: 8,
+  },
+  textInput: {
+    flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: 14,
     color: '#064e3b',
-    textAlign: 'center',
-    letterSpacing: 6,
+    fontWeight: '600',
+  },
+  eyeButton: {
+    padding: 6,
   },
   primaryButton: {
     backgroundColor: '#047857',
@@ -419,6 +594,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    marginTop: 6,
     shadowColor: '#047857',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -426,90 +602,28 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
   primaryButtonText: {
     color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  backButton: {
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  backButtonText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#047857',
-  },
-  demoCard: {
-    backgroundColor: '#f0fdf4',
-    borderRadius: 22,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#d1fae5',
-    gap: 10,
-  },
-  demoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  demoTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#064e3b',
-    textTransform: 'uppercase',
-  },
-  demoFarmerButton: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#a7f3d0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    shadowColor: '#064e3b',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  demoAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#047857',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  demoAvatarText: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#ffffff',
   },
-  demoFarmerName: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#064e3b',
-  },
-  demoFarmerMeta: {
-    fontSize: 10,
-    color: '#047857',
-    marginTop: 1,
-  },
-  securityBox: {
+  bottomLinkContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
+    marginTop: 8,
   },
-  securityText: {
-    fontSize: 10,
+  bottomMessageText: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#047857',
-    textAlign: 'center',
+  },
+  createAccountLink: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#064e3b',
+    textDecorationLine: 'underline',
   },
 });
