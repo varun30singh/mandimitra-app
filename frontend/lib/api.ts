@@ -235,6 +235,42 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       return (savedItem || newCentre) as unknown as T;
     }
 
+    // 3C. DELETE: Remove procurement centre
+    if (options.method === 'DELETE') {
+      const parts = cleanEndpoint.split('?')[0].split('/');
+      const targetId = parts[2] || '';
+
+      try {
+        await fetch(`${base}${cleanEndpoint}`, { method: 'DELETE', headers });
+      } catch (err) {
+        console.warn('Backend DELETE centre error:', err);
+      }
+
+      if (typeof window !== 'undefined') {
+        try {
+          // Remove from local custom centres
+          const stored = localStorage.getItem('mandimitra_custom_centres');
+          if (stored) {
+            const list = JSON.parse(stored);
+            const filtered = list.filter((c: any) => String(c.id) !== String(targetId) && c.code !== targetId);
+            localStorage.setItem('mandimitra_custom_centres', JSON.stringify(filtered));
+          }
+
+          // Add to deleted centres list
+          const delStored = localStorage.getItem('mandimitra_deleted_centres');
+          const delList: string[] = delStored ? JSON.parse(delStored) : [];
+          if (!delList.includes(String(targetId))) {
+            delList.push(String(targetId));
+            localStorage.setItem('mandimitra_deleted_centres', JSON.stringify(delList));
+          }
+
+          window.dispatchEvent(new CustomEvent('mandimitra_centres_updated', { detail: { id: targetId, deleted: true } }));
+        } catch {}
+      }
+
+      return { success: true, message: 'Centre removed successfully' } as unknown as T;
+    }
+
     // 3B. GET: Retrieve unified centres list
     try {
       let procList: any[] = [];
@@ -249,10 +285,13 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       seedList = seedRes?.data || (Array.isArray(seedRes) ? seedRes : []);
 
       let localList: any[] = [];
+      let deletedList: string[] = [];
       if (typeof window !== 'undefined') {
         try {
           const stored = localStorage.getItem('mandimitra_custom_centres');
           if (stored) localList = JSON.parse(stored);
+          const delStored = localStorage.getItem('mandimitra_deleted_centres');
+          if (delStored) deletedList = JSON.parse(delStored);
         } catch {}
       }
 
@@ -266,6 +305,7 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
         if (!c) continue;
         const normName = String(c.name || '').trim().toLowerCase();
         const normId = String(c.id || '');
+        if (deletedList.includes(normId) || (c.code && deletedList.includes(String(c.code)))) continue;
         if (normName && seenNames.has(normName)) continue;
         if (normId && seenIds.has(normId)) continue;
         if (normName) seenNames.add(normName);

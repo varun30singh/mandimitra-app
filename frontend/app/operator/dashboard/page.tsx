@@ -30,6 +30,7 @@ import {
   AlertCircle,
   LogOut,
   ShoppingBag,
+  Trash2,
 } from 'lucide-react';
 
 type Tab = 'queue' | 'slots' | 'centres' | 'crops' | 'orders';
@@ -73,12 +74,14 @@ export default function OperatorDashboard() {
   const [slotCapacity, setSlotCapacity] = useState<string>('30');
   const [submittingSlot, setSubmittingSlot] = useState(false);
 
-  // Form states: Create Centre
+  // Form states: Create & Remove Centre
   const [centreName, setCentreName] = useState('');
   const [centreLocation, setCentreLocation] = useState('');
   const [centreCapacityPerSlot, setCentreCapacityPerSlot] = useState('35');
   const [centreProcessingRate, setCentreProcessingRate] = useState('100');
   const [submittingCentre, setSubmittingCentre] = useState(false);
+  const [centreToDeleteId, setCentreToDeleteId] = useState<string>('');
+  const [removingCentreId, setRemovingCentreId] = useState<string | null>(null);
 
   // Form states: Create Crop
   const [cropName, setCropName] = useState('');
@@ -117,7 +120,11 @@ export default function OperatorDashboard() {
       const validCentres = Array.isArray(cData) ? cData : [];
       setCentres(validCentres);
       if (validCentres.length > 0) {
-        setSlotCentreId((prev) => prev || String(validCentres[0].id));
+        setSlotCentreId((prev) => (validCentres.some((c) => String(c.id) === prev) ? prev : String(validCentres[0].id)));
+        setCentreToDeleteId((prev) => (validCentres.some((c) => String(c.id) === prev) ? prev : String(validCentres[0].id)));
+      } else {
+        setSlotCentreId('');
+        setCentreToDeleteId('');
       }
 
       const validCrops = Array.isArray(crData) ? crData : [];
@@ -150,7 +157,16 @@ export default function OperatorDashboard() {
     const handleCentresSync = () => {
       fetchApi('/procurement-centres')
         .then((data) => {
-          if (Array.isArray(data)) setCentres(data);
+          if (Array.isArray(data)) {
+            setCentres(data);
+            if (data.length > 0) {
+              setSlotCentreId((prev) => (data.some((c) => String(c.id) === prev) ? prev : String(data[0].id)));
+              setCentreToDeleteId((prev) => (data.some((c) => String(c.id) === prev) ? prev : String(data[0].id)));
+            } else {
+              setSlotCentreId('');
+              setCentreToDeleteId('');
+            }
+          }
         })
         .catch(() => {});
     };
@@ -300,6 +316,50 @@ export default function OperatorDashboard() {
       setErrorMsg(err.message || 'Failed to create procurement centre');
     } finally {
       setSubmittingCentre(false);
+    }
+  };
+
+  // Remove Procurement Centre
+  const handleRemoveCentre = async (idToRemove?: string) => {
+    const targetId = idToRemove || centreToDeleteId;
+    if (!targetId) {
+      setErrorMsg('Please select a procurement centre to remove');
+      return;
+    }
+
+    const targetCentre = centres.find((c) => String(c.id) === String(targetId));
+    const centreLabel = targetCentre ? targetCentre.name : `#${targetId}`;
+
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm(`Are you sure you want to remove procurement centre "${centreLabel}"?`);
+      if (!confirmed) return;
+    }
+
+    setRemovingCentreId(targetId);
+    clearAlerts();
+
+    try {
+      await fetchApi(`/procurement-centres/${targetId}`, {
+        method: 'DELETE',
+      });
+
+      setSuccessMsg(`Procurement centre "${centreLabel}" removed successfully!`);
+
+      // Refresh centres
+      const refreshed = await fetchApi('/procurement-centres');
+      const valid = Array.isArray(refreshed) ? refreshed : [];
+      setCentres(valid);
+      if (valid.length > 0) {
+        setCentreToDeleteId(String(valid[0].id));
+        setSlotCentreId((prev) => (String(prev) === String(targetId) ? String(valid[0].id) : prev));
+      } else {
+        setCentreToDeleteId('');
+        setSlotCentreId('');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to remove procurement centre');
+    } finally {
+      setRemovingCentreId(null);
     }
   };
 
@@ -605,7 +665,22 @@ export default function OperatorDashboard() {
 
                 {/* Centre Dropdown */}
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.fieldLabel}>Procurement Centre</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={styles.fieldLabel}>Procurement Centre</Text>
+                    {centres.length > 0 && (
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => handleRemoveCentre(slotCentreId)}
+                        disabled={!slotCentreId || removingCentreId === slotCentreId}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, cursor: 'pointer' } as any}
+                      >
+                        <Trash2 size={12} color="#dc2626" />
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#dc2626' }}>
+                          Remove Selected Centre
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                   <select
                     value={slotCentreId}
                     onChange={(e: any) => setSlotCentreId(e.target.value)}
@@ -811,7 +886,48 @@ export default function OperatorDashboard() {
                 </TouchableOpacity>
               </View>
 
-              {/* Existing Centres List (Read-only) */}
+              {/* Form to Remove Selected Centre */}
+              {centres.length > 0 && (
+                <View style={[styles.formCard, { marginTop: 14, borderColor: '#fecaca', backgroundColor: '#fffafb' }]}>
+                  <Text style={[styles.formHeaderTitle, { color: '#991b1b' }]}>Remove Selected Procurement Centre</Text>
+                  <Text style={styles.formHeaderSub}>
+                    Select any procurement centre from the dropdown and remove it from the system.
+                  </Text>
+
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.fieldLabel}>Select Centre to Remove</Text>
+                    <select
+                      value={centreToDeleteId}
+                      onChange={(e: any) => setCentreToDeleteId(e.target.value)}
+                      style={{ ...selectStyle, borderColor: '#fca5a5' }}
+                    >
+                      {centres.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} (ID: #{c.id}) - {c.location || c.address}
+                        </option>
+                      ))}
+                    </select>
+                  </View>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleRemoveCentre()}
+                    disabled={!centreToDeleteId || removingCentreId !== null}
+                    style={[styles.submitBtn, { backgroundColor: '#dc2626', marginTop: 8, cursor: 'pointer' } as any]}
+                  >
+                    {removingCentreId === centreToDeleteId ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <>
+                        <Trash2 size={16} color="#ffffff" />
+                        <Text style={styles.submitBtnText}>Remove Selected Centre</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Existing Centres List */}
               <View style={styles.subSectionHeader}>
                 <Text style={styles.sectionTitle}>Registered Centres ({centres.length})</Text>
               </View>
@@ -819,12 +935,40 @@ export default function OperatorDashboard() {
               {centres.map((c) => (
                 <View key={c.id} style={styles.cardItem}>
                   <View style={styles.cardHeaderRow}>
-                    <View>
+                    <View style={{ flex: 1, marginRight: 8 }}>
                       <Text style={styles.cardTitle}>{c.name}</Text>
-                      <Text style={styles.cardSubText}>{c.location}</Text>
+                      <Text style={styles.cardSubText}>{c.location || c.address}</Text>
                     </View>
-                    <View style={styles.centreIdBadge}>
-                      <Text style={styles.centreIdText}>ID: #{c.id}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={styles.centreIdBadge}>
+                        <Text style={styles.centreIdText}>ID: #{c.id}</Text>
+                      </View>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => handleRemoveCentre(String(c.id))}
+                        disabled={removingCentreId === String(c.id)}
+                        style={{
+                          backgroundColor: '#fef2f2',
+                          borderWidth: 1,
+                          borderColor: '#fecaca',
+                          borderRadius: 6,
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 4,
+                          cursor: 'pointer',
+                        } as any}
+                      >
+                        {removingCentreId === String(c.id) ? (
+                          <ActivityIndicator size="small" color="#dc2626" />
+                        ) : (
+                          <>
+                            <Trash2 size={12} color="#dc2626" />
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#dc2626' }}>Remove</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
                     </View>
                   </View>
 
