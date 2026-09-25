@@ -43,15 +43,18 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
     } catch (e) {}
 
     const rawPhone = String(body.phone || body.mobile || '').replace(/\D/g, '').slice(-10);
-    const phone = rawPhone || '9822012345';
-    const userPass = String(body.password || 'password123');
+    const phone = rawPhone;
+    const userPass = String(body.password || '');
 
     // Try user's password, then candidate seed passwords on Render
     const passwordsToTry = [userPass];
     if (!passwordsToTry.includes('password123')) passwordsToTry.push('password123');
     if (!passwordsToTry.includes('123456')) passwordsToTry.push('123456');
 
+    let lastError = 'Invalid phone number or password';
+
     for (const pwd of passwordsToTry) {
+      if (!pwd) continue;
       try {
         const res = await fetch(`${base}/auth/login`, {
           method: 'POST',
@@ -60,65 +63,36 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
         });
         const json = await res.json();
         if (res.ok && json.data?.access_token) {
+          let savedName = '';
+          if (typeof window !== 'undefined') {
+            savedName = localStorage.getItem(`mandimitra_name_${phone}`) || '';
+          }
+          const userWithProfile = {
+            ...json.data.user,
+            name: savedName || json.data.user?.name || (json.data.user?.role ? `${json.data.user.role.toUpperCase()} ${phone.slice(-4)}` : 'User'),
+          };
+
           if (typeof window !== 'undefined') {
             localStorage.setItem('mandimitra_token', json.data.access_token);
-            localStorage.setItem('mandimitra_user', JSON.stringify(json.data.user));
+            localStorage.setItem('mandimitra_user', JSON.stringify(userWithProfile));
           }
           return {
             accessToken: json.data.access_token,
             access_token: json.data.access_token,
-            user: json.data.user,
+            user: userWithProfile,
           } as unknown as T;
+        } else {
+          lastError = Array.isArray(json?.message)
+            ? json.message.join(', ')
+            : json?.message || 'Invalid credentials';
         }
-      } catch (e) {}
-    }
-
-    // If user is not yet created on Render, auto-register them
-    try {
-      const regRes = await fetch(`${base}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone,
-          password: userPass.length >= 6 ? userPass : `${userPass}123456`.slice(0, 6),
-          role: 'farmer',
-          name: 'Farmer ' + phone.slice(-4),
-        }),
-      });
-      const regJson = await regRes.json();
-      if (regRes.ok && regJson.data?.access_token) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('mandimitra_token', regJson.data.access_token);
-          localStorage.setItem('mandimitra_user', JSON.stringify(regJson.data.user));
-        }
-        return {
-          accessToken: regJson.data.access_token,
-          access_token: regJson.data.access_token,
-          user: regJson.data.user,
-        } as unknown as T;
+      } catch (e: any) {
+        lastError = e.message || lastError;
       }
-    } catch (e) {}
-
-    // Resilient fallback: ensure farmer is never blocked
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('mandimitra_token', defaultToken);
-      localStorage.setItem('mandimitra_user', JSON.stringify({
-        id: 19,
-        phone,
-        role: 'farmer',
-        name: 'Ramesh Singh',
-      }));
     }
-    return {
-      accessToken: defaultToken,
-      access_token: defaultToken,
-      user: {
-        id: 19,
-        phone,
-        role: 'farmer',
-        name: 'Ramesh Singh',
-      },
-    } as unknown as T;
+
+    // Throw actual error so user is notified; NEVER silently fall back to Ramesh Singh
+    throw new Error(lastError || 'Invalid phone number or password. Please verify your credentials.');
   }
 
   // =========================================================================
@@ -131,9 +105,9 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
     } catch (e) {}
 
     const phone = String(body.phone || body.mobile || '').replace(/\D/g, '').slice(-10);
-    const rawPass = String(body.password || 'password123');
-    const password = rawPass.length >= 6 ? rawPass : `${rawPass}123456`.slice(0, 6);
-    const name = String(body.fullName || body.name || 'Farmer');
+    const password = String(body.password || 'password123');
+    const name = String(body.fullName || body.name || 'User');
+    const role = String(body.role || 'farmer').toLowerCase();
 
     const res = await fetch(`${base}/auth/register`, {
       method: 'POST',
@@ -141,7 +115,7 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       body: JSON.stringify({
         phone,
         password,
-        role: 'farmer',
+        role,
         name,
       }),
     });
@@ -154,49 +128,211 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       throw new Error(errorMsg);
     }
 
-    if (json.data?.access_token && typeof window !== 'undefined') {
+    if (json.data?.user?.id && json.data?.access_token && role === 'stockist') {
+      try {
+        await fetch(`${base}/stockists`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${json.data.access_token}`,
+          },
+          body: JSON.stringify({ userId: json.data.user.id, businessName: name }),
+        });
+      } catch (e) {}
+    }
+
+    const userWithProfile = {
+      ...json.data.user,
+      name,
+    };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`mandimitra_name_${phone}`, name);
       localStorage.setItem('mandimitra_token', json.data.access_token);
-      localStorage.setItem('mandimitra_user', JSON.stringify(json.data.user));
+      localStorage.setItem('mandimitra_user', JSON.stringify(userWithProfile));
     }
     return {
       accessToken: json.data?.access_token,
       access_token: json.data?.access_token,
-      user: json.data?.user,
+      user: userWithProfile,
     } as unknown as T;
   }
 
   // =========================================================================
-  // 3. CENTRES: ADAPTER (NORMALIZING RENDER CENTRES)
+  // 3. CENTRES & PROCUREMENT-CENTRES: UNIFIED REAL-TIME ADAPTER
   // =========================================================================
-  if (cleanEndpoint.startsWith('/centres')) {
-    try {
-      const url = cleanEndpoint.startsWith('http') ? cleanEndpoint : `${base}/centres`;
-      const res = await fetch(url, { ...options, headers });
-      const json = await res.json();
-      const rawList = json.data || (Array.isArray(json) ? json : []);
+  if (cleanEndpoint.startsWith('/centres') || cleanEndpoint.startsWith('/procurement-centres')) {
+    // 3A. POST: Create new procurement centre
+    if (options.method === 'POST') {
+      let body: any = {};
+      try {
+        body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
+      } catch (e) {}
 
-      if (rawList && rawList.length > 0) {
-        const normalized = rawList.map((c: any, idx: number) => {
-          const waitMins = c.currentWaitMinutes || 25 + (idx * 10);
-          return {
-            id: String(c.id || `centre-${idx + 1}`),
-            name: c.name || `Grain Mandi #${idx + 1}`,
-            code: c.code || `MANDI-0${idx + 1}`,
-            address: c.address || `${c.district || 'Nashik'}, ${c.state || 'Maharashtra'}`,
-            district: c.district || 'Nashik',
-            taluka: c.taluka || c.district || 'Niphad',
-            state: c.state || 'Maharashtra',
-            distanceKm: c.distanceKm ? Number(c.distanceKm) : (3.5 + (idx * 1.8)).toFixed(1),
-            currentQueue: c.currentQueue ?? Math.max(3, Math.round(waitMins / 5)),
-            estimatedWaitMinutes: waitMins,
-            availableSlots: c.availableSlots ?? (c.capacityTrucks ? c.capacityTrucks * 2 : 24 - idx * 4),
-            waitLevel: c.waitLevel || (waitMins > 60 ? 'Full' : waitMins > 40 ? 'Busy' : waitMins > 20 ? 'Moderate' : 'Low'),
-            processingSpeed: c.processingSpeed ?? 4,
-            capacityUtilization: c.capacityUtilization ?? (55 + idx * 12),
-          };
+      const centreName = String(body.name || '').trim();
+      const centreLocation = String(body.location || body.address || 'Maharashtra').trim();
+      const capacityPerSlot = parseInt(body.capacity_per_slot || body.capacity || '35', 10);
+      const processingRate = parseInt(body.processing_rate || body.processingRateQtlPerHr || '100', 10);
+
+      let savedItem: any = null;
+
+      try {
+        const res = await fetch(`${base}/procurement-centres`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: centreName,
+            location: centreLocation,
+            capacity_per_slot: capacityPerSlot,
+            processing_rate: processingRate,
+          }),
         });
-        return normalized as unknown as T;
+        const json = await res.json();
+        if (json.data || json.id) {
+          savedItem = json.data || json;
+        }
+      } catch (err) {
+        console.warn('Backend /procurement-centres POST error:', err);
       }
+
+      const assignedId = savedItem?.id ? String(savedItem.id) : `proc-${Date.now().toString().slice(-4)}`;
+      const prefix = centreName.slice(0, 3).toUpperCase().replace(/[^A-Z]/g, 'C') || 'CTR';
+      const newCentre = {
+        id: assignedId,
+        name: centreName,
+        location: centreLocation,
+        address: centreLocation,
+        district: centreLocation.split(',')[0].trim() || 'Nashik',
+        taluka: centreLocation.split(',')[0].trim() || 'Nashik',
+        state: 'Maharashtra',
+        code: `MC-${prefix}-${assignedId}`,
+        capacity_per_slot: capacityPerSlot,
+        processing_rate: processingRate,
+        capacityUtilization: 45,
+        activeCounters: 3,
+        distanceKm: 3.8,
+        currentQueue: Math.max(2, Math.round(capacityPerSlot / 8)),
+        estimatedWaitMinutes: 18,
+        availableSlots: capacityPerSlot,
+        waitLevel: 'Low',
+        processingSpeed: 4,
+        status: 'ACTIVE',
+        supportedCrops: ['Wheat', 'Paddy', 'Soybean', 'Gram'],
+        created_at: new Date().toISOString(),
+      };
+
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('mandimitra_custom_centres');
+          const list = stored ? JSON.parse(stored) : [];
+          const filtered = list.filter((c: any) => String(c.id) !== assignedId && c.name?.toLowerCase() !== centreName.toLowerCase());
+          filtered.unshift(newCentre);
+          localStorage.setItem('mandimitra_custom_centres', JSON.stringify(filtered));
+          window.dispatchEvent(new CustomEvent('mandimitra_centres_updated', { detail: newCentre }));
+        } catch {}
+      }
+
+      return (savedItem || newCentre) as unknown as T;
+    }
+
+    // 3B. GET: Retrieve unified centres list
+    try {
+      let procList: any[] = [];
+      let seedList: any[] = [];
+
+      const [procRes, seedRes] = await Promise.all([
+        fetch(`${base}/procurement-centres`, { headers }).then((r) => r.json()).catch(() => []),
+        fetch(`${base}/centres`, { headers }).then((r) => r.json()).catch(() => []),
+      ]);
+
+      procList = procRes?.data || (Array.isArray(procRes) ? procRes : []);
+      seedList = seedRes?.data || (Array.isArray(seedRes) ? seedRes : []);
+
+      let localList: any[] = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('mandimitra_custom_centres');
+          if (stored) localList = JSON.parse(stored);
+        } catch {}
+      }
+
+      // Combine all sources: local custom first, then procurement-centres, then seed centres
+      const combinedRaw = [...localList, ...procList, ...seedList];
+      const seenNames = new Set<string>();
+      const seenIds = new Set<string>();
+      const uniqueRaw: any[] = [];
+
+      for (const c of combinedRaw) {
+        if (!c) continue;
+        const normName = String(c.name || '').trim().toLowerCase();
+        const normId = String(c.id || '');
+        if (normName && seenNames.has(normName)) continue;
+        if (normId && seenIds.has(normId)) continue;
+        if (normName) seenNames.add(normName);
+        if (normId) seenIds.add(normId);
+        uniqueRaw.push(c);
+      }
+
+      const normalized = uniqueRaw.map((c: any, idx: number) => {
+        const idStr = String(c.id || `centre-${idx + 1}`);
+        const nameStr = c.name || `Procurement Centre #${idx + 1}`;
+        const locStr = c.location || c.address || 'Maharashtra';
+        const waitMins = c.currentWaitMinutes || (18 + (idx % 4) * 8);
+        const capPerSlot = c.capacity_per_slot || c.capacityTrucks || c.capacity || 35;
+        const procRate = c.processing_rate || c.processingRateQtlPerHr || 100;
+
+        let codeStr = c.code;
+        if (!codeStr) {
+          const parts = nameStr.trim().split(/\s+/);
+          const prefix = parts.length > 1
+            ? (parts[0][0] + parts[1][0]).toUpperCase()
+            : parts[0].slice(0, 3).toUpperCase();
+          codeStr = `MC-${prefix}-${String(idStr).padStart(2, '0')}`;
+        }
+
+        let talukaStr = c.taluka || '';
+        let districtStr = c.district || '';
+        if (!talukaStr || !districtStr) {
+          const locParts = locStr.split(',').map((p: string) => p.trim());
+          talukaStr = talukaStr || locParts[0] || 'Nashik';
+          districtStr = districtStr || locParts[1] || locParts[0] || 'Nashik';
+        }
+
+        return {
+          id: idStr,
+          name: nameStr,
+          code: codeStr,
+          location: locStr,
+          address: locStr,
+          district: districtStr,
+          taluka: talukaStr,
+          state: c.state || 'Maharashtra',
+          distanceKm: c.distanceKm ? Number(c.distanceKm) : Number((2.4 + (idx * 1.3)).toFixed(1)),
+          currentQueue: c.currentQueue ?? Math.max(2, Math.round(waitMins / 5)),
+          estimatedWaitMinutes: waitMins,
+          availableSlots: c.availableSlots ?? capPerSlot,
+          capacity_per_slot: capPerSlot,
+          processing_rate: procRate,
+          processingSpeed: c.processingSpeed ?? 4,
+          capacityUtilization: c.capacityUtilization ?? (45 + (idx % 5) * 8),
+          capacity: capPerSlot * 2,
+          activeCounters: c.activeCounters || 3,
+          status: c.status || 'ACTIVE',
+          waitLevel: c.waitLevel || (waitMins > 60 ? 'Full' : waitMins > 40 ? 'Busy' : waitMins > 20 ? 'Moderate' : 'Low'),
+          supportedCrops: c.supportedCrops || ['Wheat', 'Paddy', 'Soybean', 'Gram'],
+          created_at: c.created_at || new Date().toISOString(),
+        };
+      });
+
+      // Check if querying a specific centre ID, e.g. /centres/10 or /procurement-centres/10
+      const pathParts = cleanEndpoint.split('?')[0].split('/');
+      if (pathParts.length >= 3 && pathParts[2]) {
+        const reqId = pathParts[2];
+        const match = normalized.find((c) => c.id === reqId || c.code === reqId);
+        if (match) return match as unknown as T;
+      }
+
+      return normalized as unknown as T;
     } catch (err) {
       console.warn('Centres fetch error, using fallback:', err);
     }
@@ -227,39 +363,66 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       }
     } catch (e) {}
 
-    // Fallback if network issue
+    let currentName = '';
+    let currentPhone = '';
+    if (typeof window !== 'undefined') {
+      try {
+        const uStr = localStorage.getItem('mandimitra_user');
+        if (uStr) {
+          const u = JSON.parse(uStr);
+          if (u.name) currentName = u.name;
+          if (u.phone) currentPhone = u.phone;
+        }
+      } catch {}
+    }
+
+    // Fallback using authenticated user details
     return {
       id: 'farmer-001',
       farmerId: 'MH-NAS-2026-0812',
-      fullName: 'Ramesh Singh',
-      village: 'Dorli',
-      taluka: 'Meerut',
-      district: 'Meerut',
-      state: 'Uttar Pradesh',
-      mobile: '+919876543210',
+      fullName: currentName || 'Farmer',
+      village: 'Pimpalgaon Baswant',
+      taluka: 'Niphad',
+      district: 'Nashik',
+      state: 'Maharashtra',
+      mobile: currentPhone ? `+91${currentPhone}` : '+919822012345',
       defaultCrop: 'Wheat',
       registrationStatus: 'VERIFIED',
     } as unknown as T;
   }
 
   // =========================================================================
-  // 5. SLOTS: ADAPTER (NORMALIZING RENDER 28 SLOTS)
+  // 5. SLOTS: ADAPTER (NORMALIZING FOR FARMER BOOKING /slots/centre/:id)
   // =========================================================================
-  if (cleanEndpoint.startsWith('/slots')) {
+  if (cleanEndpoint.startsWith('/slots/centre')) {
     try {
+      const centreId = cleanEndpoint.split('?')[0].split('/').pop() || '1';
       const res = await fetch(`${base}/slots`, { headers });
       const json = await res.json();
       const rawSlots = json.data || (Array.isArray(json) ? json : []);
 
-      if (rawSlots && rawSlots.length > 0) {
-        const times = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'];
-        const normalized = rawSlots.slice(0, 8).map((s: any, idx: number) => {
-          const startTime = times[idx % times.length];
-          const endTime = times[(idx + 1) % times.length];
+      const times = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'];
+      
+      const matchingSlots = rawSlots.filter((s: any) => String(s.centre_id ?? s.centreId ?? '') === String(centreId));
+
+      if (matchingSlots.length > 0) {
+        const normalized = matchingSlots.map((s: any, idx: number) => {
+          let startTime = times[idx % times.length];
+          let endTime = times[(idx + 1) % times.length];
+          if (s.start_time && !s.start_time.startsWith('1970')) {
+            try {
+              startTime = new Date(s.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } catch {}
+          }
+          if (s.end_time && !s.end_time.startsWith('1970')) {
+            try {
+              endTime = new Date(s.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } catch {}
+          }
           const remaining = Math.max(3, (s.capacity || 30) - (s.booked_count || 0));
           return {
             id: String(s.id),
-            centreId: String(s.centre_id || 1),
+            centreId: String(s.centre_id || centreId),
             startTime,
             endTime,
             timeWindow: '30-min guaranteed',
@@ -269,7 +432,19 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
         });
         return normalized as unknown as T;
       }
-    } catch (e) {}
+
+      // If no custom operator slots exist yet for this centre, provide available slots
+      const defaultSlots = [
+        { id: `slot-${centreId}-1`, centreId, startTime: '09:00 AM', endTime: '10:00 AM', timeWindow: '30-min guaranteed', remainingCapacity: 35, status: 'Open' },
+        { id: `slot-${centreId}-2`, centreId, startTime: '10:00 AM', endTime: '11:00 AM', timeWindow: '30-min guaranteed', remainingCapacity: 30, status: 'Open' },
+        { id: `slot-${centreId}-3`, centreId, startTime: '11:00 AM', endTime: '12:00 PM', timeWindow: '30-min guaranteed', remainingCapacity: 25, status: 'Open' },
+        { id: `slot-${centreId}-4`, centreId, startTime: '02:00 PM', endTime: '03:00 PM', timeWindow: '30-min guaranteed', remainingCapacity: 28, status: 'Open' },
+        { id: `slot-${centreId}-5`, centreId, startTime: '03:00 PM', endTime: '04:00 PM', timeWindow: '30-min guaranteed', remainingCapacity: 35, status: 'Open' },
+      ];
+      return defaultSlots as unknown as T;
+    } catch (e) {
+      console.warn('Slots fetch error:', e);
+    }
   }
 
   // =========================================================================
@@ -284,6 +459,22 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
     const slot_id = parseInt(body.slotId || body.slot_id) || 20;
     const crop_id = body.crop === 'Rice' ? 2 : body.crop === 'Mustard' ? 3 : 1;
     const quantity_estimate = parseFloat(body.quantity || body.quantity_estimate) || 50;
+    const bookedCentreId = String(body.centreId || body.centre_id || '');
+    let resolvedCentreName = body.centreName || '';
+
+    if (!resolvedCentreName && typeof window !== 'undefined') {
+      try {
+        const storedCentres = localStorage.getItem('mandimitra_custom_centres');
+        if (storedCentres) {
+          const list = JSON.parse(storedCentres);
+          const found = list.find((c: any) => String(c.id) === bookedCentreId || c.name === bookedCentreId);
+          if (found) resolvedCentreName = found.name;
+        }
+      } catch {}
+    }
+    if (!resolvedCentreName) {
+      resolvedCentreName = bookedCentreId ? `Centre #${bookedCentreId}` : 'Mandi Procurement Centre';
+    }
 
     try {
       const res = await fetch(`${base}/bookings`, {
@@ -307,7 +498,8 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
           appointmentTime: '10:30 AM',
           crop: body.crop || 'Wheat',
           quantity: quantity_estimate,
-          centreName: 'Meerut Grain Mandi #14',
+          centreId: bookedCentreId,
+          centreName: resolvedCentreName,
           bookedAt: new Date().toISOString(),
         };
         localStorage.setItem('mandimitra_active_token', JSON.stringify(activeToken));
@@ -347,8 +539,8 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
               },
             },
             centre: {
-              id: 'centre-14',
-              name: tok.centreName || 'Meerut Grain Mandi #14',
+              id: tok.centreId || 'centre-01',
+              name: tok.centreName || 'Mandi Procurement Centre',
             },
             currentServing: { tokenNumber: 'MM-035' },
             nextInLine: { tokenNumber: 'MM-036' },
@@ -381,7 +573,211 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
   }
 
   // =========================================================================
-  // 8. RECOMMENDATIONS: ADAPTER
+  // 8. ORDERS & PROCUREMENT: INTERCONNECTED NETWORK ADAPTER
+  // =========================================================================
+  if (cleanEndpoint === '/orders' || cleanEndpoint.startsWith('/orders/')) {
+    const getStoredMeta = (): Record<string, any> => {
+      if (typeof window === 'undefined') return {};
+      try {
+        const raw = localStorage.getItem('mandimitra_orders_meta');
+        return raw ? JSON.parse(raw) : {};
+      } catch {
+        return {};
+      }
+    };
+
+    const saveStoredMeta = (metaMap: Record<string, any>) => {
+      if (typeof window === 'undefined') return;
+      try {
+        localStorage.setItem('mandimitra_orders_meta', JSON.stringify(metaMap));
+      } catch {}
+    };
+
+    // 1. POST /orders: Place new procurement order
+    if (options.method === 'POST') {
+      let body: any = {};
+      try {
+        body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+      } catch {}
+
+      const listingId = Number(body.listingId) || 101;
+      const buyerId = Number(body.buyerId) || 201;
+      const brokerId = Number(body.brokerId) || 301;
+      const quantity = Number(body.quantity) || 20;
+      const amount = Number(body.amount) || Math.round(quantity * 2275);
+      const crop = body.crop || 'Wheat';
+      const status = body.status || 'PENDING';
+      const farmerName = body.farmerName || 'Ramesh Singh';
+      const centreName = body.centreName || 'Meerut Grain Mandi #14';
+
+      let createdOrder: any = null;
+      try {
+        const res = await fetch(`${base}/orders`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            listingId,
+            buyerId,
+            brokerId,
+            quantity,
+            amount,
+            status,
+          }),
+        });
+        const json = await res.json();
+        if (json.data && json.data.id) {
+          createdOrder = json.data;
+        } else if (json.id) {
+          createdOrder = json;
+        }
+      } catch (err) {
+        console.warn('Backend POST /orders failed, saving locally:', err);
+      }
+
+      const orderId = createdOrder?.id || Date.now() % 10000;
+      const fullOrder = {
+        id: orderId,
+        listingId,
+        buyerId,
+        brokerId,
+        quantity,
+        amount,
+        crop,
+        status: createdOrder?.status || status,
+        farmerName,
+        centreName,
+        createdAt: createdOrder?.createdAt || new Date().toISOString(),
+      };
+
+      const meta = getStoredMeta();
+      meta[String(orderId)] = fullOrder;
+      saveStoredMeta(meta);
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('mandimitra_orders_updated', { detail: fullOrder }));
+      }
+
+      return fullOrder as unknown as T;
+    }
+
+    // 2. PATCH /orders/:id: Update order status (e.g. Operator verification)
+    if (options.method === 'PATCH' || options.method === 'PUT') {
+      let body: any = {};
+      try {
+        body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+      } catch {}
+
+      const idMatch = cleanEndpoint.match(/\/orders\/(\d+)/);
+      const orderId = idMatch ? idMatch[1] : '';
+
+      try {
+        await fetch(`${base}${cleanEndpoint}`, {
+          method: options.method,
+          headers,
+          body: JSON.stringify(body),
+        });
+      } catch {}
+
+      if (orderId) {
+        const meta = getStoredMeta();
+        if (meta[orderId]) {
+          meta[orderId] = { ...meta[orderId], ...body };
+          saveStoredMeta(meta);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('mandimitra_orders_updated', { detail: meta[orderId] }));
+          }
+          return meta[orderId] as unknown as T;
+        }
+      }
+      return { id: orderId, ...body } as unknown as T;
+    }
+
+    // 3. GET /orders: Fetch all orders enriched with metadata
+    try {
+      const res = await fetch(`${base}/orders`, { headers });
+      const json = await res.json();
+      const liveOrders = Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
+
+      const meta = getStoredMeta();
+      const seenIds = new Set<string>();
+
+      const merged = liveOrders.map((ord: any) => {
+        const idStr = String(ord.id);
+        seenIds.add(idStr);
+        const m = meta[idStr] || {};
+        return {
+          id: ord.id,
+          listingId: ord.listingId ?? m.listingId ?? (100 + (ord.id % 10)),
+          buyerId: ord.buyerId ?? m.buyerId ?? (200 + (ord.id % 5)),
+          brokerId: ord.brokerId ?? m.brokerId ?? (300 + (ord.id % 3)),
+          quantity: ord.quantity ?? m.quantity ?? (15 + ((ord.id * 7) % 40)),
+          amount: ord.amount ?? m.amount ?? (Math.round((ord.quantity ?? m.quantity ?? 25) * 2275)),
+          crop: m.crop || ord.crop || (ord.id % 3 === 0 ? 'Paddy' : ord.id % 2 === 0 ? 'Mustard' : 'Wheat'),
+          status: ord.status || m.status || 'PENDING',
+          farmerName: m.farmerName || 'Ramesh Singh',
+          centreName: m.centreName || 'Meerut Grain Mandi #14',
+          createdAt: ord.createdAt || m.createdAt || new Date().toISOString(),
+        };
+      });
+
+      // Add any locally placed orders not yet in backend list
+      for (const [idStr, localOrd] of Object.entries(meta)) {
+        if (!seenIds.has(idStr)) {
+          merged.unshift(localOrd);
+        }
+      }
+
+      // Sort newest first
+      merged.sort((a: any, b: any) => {
+        const dateA = new Date(a.createdAt).getTime() || 0;
+        const dateB = new Date(b.createdAt).getTime() || 0;
+        if (dateA !== dateB) return dateB - dateA;
+        return (Number(b.id) || 0) - (Number(a.id) || 0);
+      });
+
+      return merged as unknown as T;
+    } catch (err) {
+      console.warn('Error fetching orders from backend, using cached meta:', err);
+      const meta = getStoredMeta();
+      const fallbackList = Object.values(meta);
+      return fallbackList as unknown as T;
+    }
+  }
+
+  // =========================================================================
+  // 9. PROCUREMENT: INTERCONNECTED WITH ORDERS ADAPTER
+  // =========================================================================
+  if (cleanEndpoint.startsWith('/procurement/farmer') || cleanEndpoint === '/procurement') {
+    try {
+      const orders = await fetchApi<any[]>('/orders');
+      if (Array.isArray(orders)) {
+        return orders.map((o: any) => ({
+          id: o.id,
+          procurementNumber: `MM-ORD-00${o.id}`,
+          crop: o.crop || 'Wheat',
+          quantity: o.quantity || 25,
+          totalAmount: o.amount || Math.round((o.quantity || 25) * 2275),
+          ratePerQuintal: Math.round((o.amount || Math.round((o.quantity || 25) * 2275)) / (o.quantity || 25)),
+          grade: 'FAQ Grade-A',
+          moistureContent: 11.8,
+          status: o.status || 'COMPLETED',
+          centre: {
+            id: 'centre-14',
+            name: o.centreName || 'Meerut Grain Mandi #14',
+          },
+          buyerId: o.buyerId,
+          brokerId: o.brokerId,
+          listingId: o.listingId,
+          createdAt: o.createdAt,
+        })) as unknown as T;
+      }
+    } catch (e) {
+      console.warn('Error fetching procurement through orders:', e);
+    }
+  }
+
+  // =========================================================================
+  // 10. RECOMMENDATIONS: ADAPTER
   // =========================================================================
   if (cleanEndpoint.startsWith('/recommendations')) {
     try {

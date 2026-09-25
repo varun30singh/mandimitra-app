@@ -13,10 +13,26 @@ export default function FarmerCentresPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchApi('/centres').then((res) => {
-      setCentres(res);
-      setLoading(false);
-    });
+    const loadCentres = () => {
+      fetchApi('/centres').then((res) => {
+        setCentres(Array.isArray(res) ? res : []);
+        setLoading(false);
+      });
+    };
+
+    loadCentres();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mandimitra_centres_updated', loadCentres);
+      window.addEventListener('storage', loadCentres);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('mandimitra_centres_updated', loadCentres);
+        window.removeEventListener('storage', loadCentres);
+      }
+    };
   }, []);
 
   return (
@@ -110,9 +126,9 @@ export default function FarmerCentresPage() {
                 </View>
               </View>
 
-              <View style={styles.cardFooter}>
+                <View style={styles.cardFooter}>
                 <Text style={styles.speedLabel}>
-                  {t('speed')}: ~{c.processingSpeed} {t('per_farmer')}
+                  {t('speed_format', { min: c.processingSpeed })}
                 </Text>
                 <Link href={`/farmer/book?centreId=${c.id}`} style={{ textDecoration: 'none' }}>
                   <View style={styles.bookButton}>

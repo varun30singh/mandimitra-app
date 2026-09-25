@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 function BookSlotContent() {
-  const { language, t } = useLanguage();
+  const { language, t, translateMessage, translateStatus } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedCentreId = searchParams.get('centreId');
@@ -48,15 +48,31 @@ function BookSlotContent() {
 
   // Load centres
   useEffect(() => {
-    fetchApi('/centres').then((res) => {
-      setCentres(res);
-      if (preselectedCentreId) {
-        setSelectedCentreId(preselectedCentreId);
-      } else if (res.length > 0) {
-        const centreB = res.find((c: any) => c.code === 'MANDI-NPH') || res[0];
-        setSelectedCentreId(centreB.id);
+    const loadCentres = () => {
+      fetchApi('/centres').then((res) => {
+        const list = Array.isArray(res) ? res : [];
+        setCentres(list);
+        if (preselectedCentreId) {
+          setSelectedCentreId(preselectedCentreId);
+        } else if (list.length > 0) {
+          setSelectedCentreId((prev) => prev || list[0].id);
+        }
+      });
+    };
+
+    loadCentres();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mandimitra_centres_updated', loadCentres);
+      window.addEventListener('storage', loadCentres);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('mandimitra_centres_updated', loadCentres);
+        window.removeEventListener('storage', loadCentres);
       }
-    });
+    };
   }, [preselectedCentreId]);
 
   // Load slots whenever centre changes
@@ -97,7 +113,7 @@ function BookSlotContent() {
 
       router.push(`/farmer/token?token=${result.token.tokenNumber}&new=true`);
     } catch (err: any) {
-      setError(err.message || 'Failed to book slot');
+      setError(err.message || t('booking_failed'));
     } finally {
       setBookingLoading(false);
     }
@@ -191,7 +207,7 @@ function BookSlotContent() {
               value={quantity}
               onChangeText={setQuantity}
               keyboardType="numeric"
-              placeholder="e.g. 85"
+              placeholder={t('quantity_placeholder')}
               placeholderTextColor="#9ca3af"
               style={styles.textInput}
             />
@@ -251,7 +267,7 @@ function BookSlotContent() {
                         isSelected ? styles.slotWindowSelected : styles.slotWindowDefault,
                       ]}
                     >
-                      {s.timeWindow}
+                      {translateMessage(s.timeWindow)}
                     </Text>
                     <View style={styles.slotFooter}>
                       <Text
@@ -260,7 +276,7 @@ function BookSlotContent() {
                           isSelected ? styles.slotStatusSelected : styles.slotStatusDefault,
                         ]}
                       >
-                        {s.status}
+                        {translateStatus(s.status)}
                       </Text>
                       <Text
                         style={[
@@ -268,7 +284,7 @@ function BookSlotContent() {
                           isSelected ? styles.slotSpotsSelected : styles.slotSpotsDefault,
                         ]}
                       >
-                        {s.remainingCapacity} {t('spots')}
+                        {t('spots_count', { count: s.remainingCapacity })}
                       </Text>
                     </View>
                   </TouchableOpacity>

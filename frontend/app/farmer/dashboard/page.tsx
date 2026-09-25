@@ -13,14 +13,18 @@ import {
   ArrowRight,
   Wheat,
   RefreshCw,
+  ShoppingBag,
+  TrendingUp,
 } from 'lucide-react';
 
 export default function FarmerDashboard() {
-  const { language, t } = useLanguage();
+  const { language, t, translateCrop } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [farmer, setFarmer] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [tokenData, setTokenData] = useState<any>(null);
   const [centres, setCentres] = useState<any[]>([]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadDashboardData = async () => {
@@ -34,6 +38,9 @@ export default function FarmerDashboard() {
 
       const centresRes = await fetchApi('/centres?lat=20.1700&lng=74.0500');
       setCentres(centresRes);
+
+      const ordersRes = await fetchApi('/orders').catch(() => []);
+      setRecentOrders(Array.isArray(ordersRes) ? ordersRes : []);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     } finally {
@@ -43,7 +50,44 @@ export default function FarmerDashboard() {
   };
 
   useEffect(() => {
+    try {
+      const uStr = localStorage.getItem('mandimitra_user');
+      if (uStr) setCurrentUser(JSON.parse(uStr));
+    } catch {}
     loadDashboardData();
+
+    const handleOrderSync = () => {
+      fetchApi('/orders')
+        .then((res) => {
+          if (Array.isArray(res)) setRecentOrders(res);
+        })
+        .catch(() => {});
+    };
+
+    const handleCentresSync = () => {
+      fetchApi('/centres?lat=20.1700&lng=74.0500')
+        .then((res) => {
+          if (Array.isArray(res)) setCentres(res);
+        })
+        .catch(() => {});
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mandimitra_orders_updated', handleOrderSync);
+      window.addEventListener('mandimitra_centres_updated', handleCentresSync);
+      window.addEventListener('storage', () => {
+        handleOrderSync();
+        handleCentresSync();
+      });
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('mandimitra_orders_updated', handleOrderSync);
+        window.removeEventListener('mandimitra_centres_updated', handleCentresSync);
+        window.removeEventListener('storage', handleOrderSync);
+      }
+    };
   }, []);
 
   return (
@@ -58,7 +102,9 @@ export default function FarmerDashboard() {
             </View>
           </View>
 
-          <Text style={styles.farmerName}>{farmer ? farmer.fullName : 'Ramesh Kumar'}</Text>
+          <Text style={styles.farmerName}>
+            {currentUser?.name || (farmer ? farmer.fullName : 'Farmer')}
+          </Text>
 
           <View style={styles.locationRow}>
             <MapPin size={13} color="#047857" />
@@ -67,7 +113,7 @@ export default function FarmerDashboard() {
             </Text>
             <Text style={styles.bullet}>•</Text>
             <Text style={styles.cropText}>
-              {language === 'mr' ? 'गहू' : language === 'hi' ? 'गेहूँ' : 'Wheat'}
+              {translateCrop(farmer ? farmer.defaultCrop : 'Wheat')}
             </Text>
           </View>
         </View>
@@ -77,7 +123,7 @@ export default function FarmerDashboard() {
           onPress={loadDashboardData}
           disabled={refreshing}
           style={styles.refreshButton}
-          accessibilityLabel="Refresh Dashboard"
+          accessibilityLabel={t('refresh')}
         >
           <RefreshCw size={16} color="#047857" />
         </TouchableOpacity>
@@ -121,6 +167,70 @@ export default function FarmerDashboard() {
             </View>
           </View>
         </Link>
+      </View>
+
+      {/* Live Interconnected Mandi Orders */}
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <ShoppingBag size={16} color="#047857" />
+            <Text style={styles.sectionTitle}>Live Mandi Market Orders</Text>
+          </View>
+          <Link href="/farmer/procurement" style={{ textDecoration: 'none' }}>
+            <Text style={styles.viewAllText}>{t('view_all')}</Text>
+          </Link>
+        </View>
+
+        {recentOrders.length === 0 ? (
+          <View style={styles.emptyOrdersCard}>
+            <Text style={styles.emptyOrdersText}>No active market procurement orders yet.</Text>
+          </View>
+        ) : (
+          <View style={styles.ordersList}>
+            {recentOrders.slice(0, 2).map((ord) => {
+              const isApproved = ord.status === 'APPROVED' || ord.status === 'COMPLETED' || ord.status === 'VERIFIED';
+              return (
+                <View key={ord.id} style={styles.liveOrderCard}>
+                  <View style={styles.liveOrderHeader}>
+                    <View style={styles.orderIdTag}>
+                      <Text style={styles.orderIdText}>MM-ORD-00{ord.id}</Text>
+                    </View>
+                    <View style={[styles.orderStatusPill, isApproved ? styles.statusPillApproved : styles.statusPillPending]}>
+                      <Text style={[styles.orderStatusPillText, isApproved ? styles.statusPillTextApproved : styles.statusPillTextPending]}>
+                        {ord.status || 'PENDING'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.liveOrderBody}>
+                    <View>
+                      <Text style={styles.liveOrderCropTitle}>
+                        {translateCrop(ord.crop || 'Wheat')} — {ord.quantity || 20} qtl
+                      </Text>
+                      <Text style={styles.liveOrderMetaSub}>
+                        Buyer #{ord.buyerId || '201'} • Broker #{ord.brokerId || '301'}
+                      </Text>
+                    </View>
+
+                    <View style={styles.liveOrderAmountBox}>
+                      <Text style={styles.liveOrderAmountLabel}>Value</Text>
+                      <Text style={styles.liveOrderAmountValue}>
+                        ₹{Number(ord.amount || 0).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Link href="/farmer/procurement" style={{ textDecoration: 'none' }}>
+                    <View style={styles.liveOrderFooter}>
+                      <Text style={styles.liveOrderFooterText}>Track in Procurement Ledger</Text>
+                      <ArrowRight size={12} color="#047857" />
+                    </View>
+                  </Link>
+                </View>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       {/* Nearby Centres Cards */}
@@ -204,7 +314,7 @@ export default function FarmerDashboard() {
 
                 <View style={styles.centreCardFooter}>
                   <Text style={styles.speedText}>
-                    {t('speed')}: ~{c.processingSpeed} {t('per_farmer')}
+                    {t('speed_format', { min: c.processingSpeed })}
                   </Text>
                   <Link href={`/farmer/book?centreId=${c.id}`} style={{ textDecoration: 'none' }}>
                     <View style={styles.selectButton}>
@@ -504,5 +614,116 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 11,
     fontWeight: '800',
+  },
+  ordersList: {
+    gap: 10,
+  },
+  emptyOrdersCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+  },
+  emptyOrdersText: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  liveOrderCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  liveOrderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  orderIdTag: {
+    backgroundColor: '#f1f5f9',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  orderIdText: {
+    fontFamily: 'monospace',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  orderStatusPill: {
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  statusPillPending: {
+    backgroundColor: '#fef3c7',
+  },
+  statusPillApproved: {
+    backgroundColor: '#dcfce7',
+  },
+  orderStatusPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  statusPillTextPending: {
+    color: '#92400e',
+  },
+  statusPillTextApproved: {
+    color: '#166534',
+  },
+  liveOrderBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  liveOrderCropTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  liveOrderMetaSub: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  liveOrderAmountBox: {
+    alignItems: 'flex-end',
+  },
+  liveOrderAmountLabel: {
+    fontSize: 9,
+    color: '#64748b',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  liveOrderAmountValue: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#047857',
+  },
+  liveOrderFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  liveOrderFooterText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#047857',
   },
 });

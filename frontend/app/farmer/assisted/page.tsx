@@ -33,10 +33,27 @@ export default function AssistedKioskPage() {
   const [searchedFarmer, setSearchedFarmer] = useState<any>(null);
 
   useEffect(() => {
-    fetchApi('/centres').then((res) => {
-      setCentres(res);
-      if (res.length > 0) setSelectedCentreId(res[0].id);
-    });
+    const loadCentres = () => {
+      fetchApi('/centres').then((res) => {
+        const list = Array.isArray(res) ? res : [];
+        setCentres(list);
+        if (list.length > 0) setSelectedCentreId((prev) => prev || list[0].id);
+      });
+    };
+
+    loadCentres();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mandimitra_centres_updated', loadCentres);
+      window.addEventListener('storage', loadCentres);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('mandimitra_centres_updated', loadCentres);
+        window.removeEventListener('storage', loadCentres);
+      }
+    };
   }, []);
 
   useEffect(() => {
