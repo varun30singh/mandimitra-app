@@ -15,6 +15,25 @@ const nextConfig = {
     ];
     return config;
   },
+  async redirects() {
+    return [
+      {
+        source: '/admin/:path*',
+        destination: '/farmer/dashboard',
+        permanent: false,
+      },
+      {
+        source: '/admin',
+        destination: '/farmer/dashboard',
+        permanent: false,
+      },
+      {
+        source: '/ivr-simulator',
+        destination: '/farmer/dashboard',
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
