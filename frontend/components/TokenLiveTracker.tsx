@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native-web';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native-web';
 import { useLanguage } from '../lib/language-context';
+import { fetchApi } from '../lib/api';
 import {
   Clock,
   MapPin,
@@ -11,20 +12,47 @@ import {
   CheckCircle2,
   Truck,
   ArrowRight,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface TokenTrackerProps {
   tokenData: any;
   onRefresh?: () => void;
+  onCancel?: () => void;
   compact?: boolean;
 }
 
 export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
   tokenData,
   onRefresh,
+  onCancel,
   compact = false,
 }) => {
-  const { language, t } = useLanguage();
+  const { language, t, translateStatus, translateMessage, translateCrop } = useLanguage();
+  const [cancelling, setCancelling] = useState(false);
+  const [showConfirmCancel, setShowConfirmCancel] = useState(false);
+
+  const handleCancel = async () => {
+    if (!tokenData?.token?.id) return;
+    try {
+      setCancelling(true);
+      await fetchApi(`/bookings/${tokenData.token.id}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Cancelled by farmer' }),
+      });
+      if (onCancel) {
+        onCancel();
+      } else if (onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('Failed to cancel token:', err);
+    } finally {
+      setCancelling(false);
+      setShowConfirmCancel(false);
+    }
+  };
 
   if (!tokenData || !tokenData.token) {
     return (
@@ -94,8 +122,8 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.bannerBadge}>{t('departure_guide')}</Text>
-            <Text style={styles.bannerTitle}>{statusMessage}</Text>
-            <Text style={styles.bannerSub}>{subMessage}</Text>
+            <Text style={styles.bannerTitle}>{translateMessage(statusMessage)}</Text>
+            <Text style={styles.bannerSub}>{translateMessage(subMessage)}</Text>
           </View>
         </View>
 
@@ -122,13 +150,13 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
 
           <View style={styles.tokenRight}>
             <View style={styles.statusPill}>
-              <Text style={styles.statusPillText}>{token.status}</Text>
+              <Text style={styles.statusPillText}>{translateStatus(token.status)}</Text>
             </View>
             <Text style={styles.tokenSlotText}>
               {t('slot_label')}: {token.appointmentTime}
             </Text>
             <Text style={styles.tokenCropText}>
-              {token.booking?.crop} • {token.booking?.quantity} qtl
+              {translateCrop(token.booking?.crop)} • {token.booking?.quantity} {t('qtl')}
             </Text>
           </View>
         </View>
@@ -142,7 +170,7 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
             </View>
             <Text style={styles.metricValueLarge}>{farmersAhead}</Text>
             <Text style={styles.metricSub}>
-              {t('position')} #{queuePosition}
+              {t('position_num', { pos: queuePosition })}
             </Text>
           </View>
 
@@ -164,7 +192,7 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
             <Text style={styles.metricValueGreenDark}>
               {currentServing ? currentServing.tokenNumber : 'B-035'}
             </Text>
-            <Text style={styles.metricSub}>{t('counter')} #1</Text>
+            <Text style={styles.metricSub}>{t('counter_num', { num: 1 })}</Text>
           </View>
 
           <View style={styles.metricCard}>
@@ -172,18 +200,68 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
             <Text style={styles.metricValueAmber}>
               {nextInLine ? nextInLine.tokenNumber : 'B-036'}
             </Text>
-            <Text style={styles.metricSub}>{t('counter')} #2</Text>
+            <Text style={styles.metricSub}>{t('counter_num', { num: 2 })}</Text>
           </View>
         </View>
 
-        {/* Track Full Page CTA */}
+        {/* Action Buttons: Track Full Page and Cancel Token */}
         {!compact && (
-          <Link href="/farmer/token" style={{ textDecoration: 'none' }}>
-            <View style={styles.fullTrackButton}>
-              <Clock size={16} color="#ffffff" />
-              <Text style={styles.fullTrackButtonText}>{t('track_my_token')}</Text>
+          <View style={styles.tokenActionsRow}>
+            <Link href="/farmer/token" style={{ textDecoration: 'none', flex: 1 }}>
+              <View style={styles.fullTrackButton}>
+                <Clock size={16} color="#ffffff" />
+                <Text style={styles.fullTrackButtonText}>{t('track_my_token')}</Text>
+              </View>
+            </Link>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setShowConfirmCancel(true)}
+              style={styles.cancelTokenBtn}
+              accessibilityLabel={t('cancel_token') || 'Cancel Token'}
+            >
+              <XCircle size={16} color="#dc2626" />
+              <Text style={styles.cancelTokenBtnText}>{t('cancel_token') || 'Cancel Token'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Confirmation Dialog for Cancellation */}
+        {showConfirmCancel && (
+          <View style={styles.confirmBox}>
+            <View style={styles.confirmHeader}>
+              <AlertTriangle size={18} color="#dc2626" />
+              <Text style={styles.confirmTitle}>{t('cancel_token') || 'Cancel Token'}</Text>
             </View>
-          </Link>
+            <Text style={styles.confirmSub}>
+              {t('confirm_cancel_token') || 'Are you sure you want to cancel this procurement appointment token? This will release your reserved slot.'}
+            </Text>
+            <View style={styles.confirmActions}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handleCancel}
+                disabled={cancelling}
+                style={styles.confirmYesBtn}
+              >
+                {cancelling ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <>
+                    <XCircle size={14} color="#ffffff" />
+                    <Text style={styles.confirmYesBtnText}>{t('cancel') || 'Yes, Cancel'}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setShowConfirmCancel(false)}
+                disabled={cancelling}
+                style={styles.confirmNoBtn}
+              >
+                <Text style={styles.confirmNoBtnText}>{t('close') || 'Keep Token'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
       </View>
     </View>
@@ -476,5 +554,88 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '800',
+  },
+  tokenActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
+  },
+  cancelTokenBtn: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fca5a5',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  cancelTokenBtnText: {
+    color: '#dc2626',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  confirmBox: {
+    backgroundColor: '#fff1f2',
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    borderRadius: 18,
+    padding: 16,
+    gap: 10,
+    marginTop: 8,
+  },
+  confirmHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  confirmTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#9f1239',
+  },
+  confirmSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#881337',
+    lineHeight: 18,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  confirmYesBtn: {
+    flex: 1,
+    backgroundColor: '#dc2626',
+    borderRadius: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  confirmYesBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  confirmNoBtn: {
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#fda4af',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmNoBtnText: {
+    color: '#9f1239',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

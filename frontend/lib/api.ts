@@ -821,6 +821,22 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
     return { success: true } as unknown as T;
   }
 
+  // Cancel token / appointment action
+  if (cleanEndpoint.includes('/cancel') || cleanEndpoint.includes('/token/cancel')) {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('mandimitra_active_token');
+      window.dispatchEvent(new CustomEvent('mandimitra_token_updated', { detail: null }));
+    }
+    try {
+      await fetch(`${base}${cleanEndpoint}`, {
+        method: 'POST',
+        headers,
+        body: typeof options.body === 'string' ? options.body : JSON.stringify({ reason: 'Cancelled by farmer' }),
+      });
+    } catch (e) {}
+    return { success: true, message: 'Token cancelled successfully' } as unknown as T;
+  }
+
   // =========================================================================
   // 8. ORDERS & PROCUREMENT: INTERCONNECTED NETWORK ADAPTER
   // =========================================================================

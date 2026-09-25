@@ -18,6 +18,7 @@ import {
   Clock,
   CheckCircle2,
   X,
+  XCircle,
 } from 'lucide-react';
 
 export default function FarmerDashboard() {
@@ -116,6 +117,30 @@ export default function FarmerDashboard() {
       setBookingError(err.message || 'Failed to book slot. Please try again.');
     } finally {
       setBookingSubmitting(false);
+    }
+  };
+
+  const [cancellingToken, setCancellingToken] = useState(false);
+
+  const handleCancelActiveToken = async () => {
+    const confirmMsg = t('confirm_cancel_token') || 'Are you sure you want to cancel this procurement appointment token? This will release your reserved slot.';
+    if (typeof window !== 'undefined' && !window.confirm(confirmMsg)) {
+      return;
+    }
+    setCancellingToken(true);
+    try {
+      const tokenId = tokenData?.token?.id || 'current';
+      await fetchApi(`/bookings/${tokenId}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Cancelled by farmer' }),
+      });
+      setTokenData(null);
+      setShowProcurementBox(false);
+      await loadDashboardData();
+    } catch (err) {
+      console.error('Failed to cancel token:', err);
+    } finally {
+      setCancellingToken(false);
     }
   };
 
@@ -232,7 +257,17 @@ export default function FarmerDashboard() {
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Text style={styles.syncText}>{t('live_queue_sync')}</Text>
-                {!tokenData?.token && (
+                {tokenData?.token ? (
+                  <TouchableOpacity
+                    onPress={handleCancelActiveToken}
+                    disabled={cancellingToken}
+                    style={styles.headerCancelBtn}
+                    accessibilityLabel={t('cancel_token') || 'Cancel Token'}
+                  >
+                    <XCircle size={14} color="#dc2626" />
+                    <Text style={styles.headerCancelBtnText}>{t('cancel_token') || 'Cancel Token'}</Text>
+                  </TouchableOpacity>
+                ) : (
                   <TouchableOpacity
                     onPress={() => setShowProcurementBox(false)}
                     style={styles.closeBoxBtn}
@@ -248,6 +283,11 @@ export default function FarmerDashboard() {
               <TokenLiveTracker
                 tokenData={tokenData}
                 onRefresh={loadDashboardData}
+                onCancel={() => {
+                  setShowProcurementBox(false);
+                  setTokenData(null);
+                  loadDashboardData();
+                }}
                 compact={false}
               />
             ) : (
@@ -980,6 +1020,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#ecfdf5',
     borderWidth: 1,
     borderColor: '#a7f3d0',
+  },
+  headerCancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fef2f2',
+    borderColor: '#fca5a5',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  headerCancelBtnText: {
+    color: '#dc2626',
+    fontSize: 11,
+    fontWeight: '700',
   },
   quickBookBox: {
     backgroundColor: '#ffffff',

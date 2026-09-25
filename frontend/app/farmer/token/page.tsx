@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   View,
   Text,
@@ -17,16 +17,19 @@ import {
   RefreshCw,
   QrCode,
   Truck,
+  XCircle,
 } from 'lucide-react';
 
 function TokenTrackerContent() {
   const { language, t } = useLanguage();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const paramToken = searchParams.get('token');
 
   const [tokenDetails, setTokenDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const loadToken = async () => {
     try {
@@ -68,6 +71,27 @@ function TokenTrackerContent() {
     }
   };
 
+  const handleCancelToken = async () => {
+    if (!tokenDetails?.token?.id) return;
+    const confirmMsg = t('confirm_cancel_token') || 'Are you sure you want to cancel this procurement appointment token? This will release your reserved slot.';
+    if (typeof window !== 'undefined' && !window.confirm(confirmMsg)) {
+      return;
+    }
+    try {
+      setCancelling(true);
+      await fetchApi(`/bookings/${tokenDetails.token.id}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Cancelled by farmer' }),
+      });
+      setTokenDetails(null);
+      router.push('/farmer/dashboard');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
@@ -81,7 +105,7 @@ function TokenTrackerContent() {
           activeOpacity={0.7}
           onPress={loadToken}
           style={styles.refreshButton}
-          accessibilityLabel="Refresh Token Status"
+          accessibilityLabel={t('refresh')}
         >
           <RefreshCw size={13} color="#047857" />
           <Text style={styles.refreshButtonText}>{t('refresh')}</Text>
@@ -89,7 +113,14 @@ function TokenTrackerContent() {
       </View>
 
       {/* Main Live Card */}
-      <TokenLiveTracker tokenData={tokenDetails} onRefresh={loadToken} />
+      <TokenLiveTracker
+        tokenData={tokenDetails}
+        onRefresh={loadToken}
+        onCancel={() => {
+          setTokenDetails(null);
+          router.push('/farmer/dashboard');
+        }}
+      />
 
       {/* Digital Mandi Gate Pass QR Code Card */}
       {tokenDetails && (
@@ -127,11 +158,33 @@ function TokenTrackerContent() {
               style={styles.checkInButton}
             >
               {checkingIn ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <>
+                  <ActivityIndicator size="small" color="#ffffff" />
+                  <Text style={styles.checkInButtonText}>{t('checking_in')}</Text>
+                </>
               ) : (
                 <>
                   <Truck size={16} color="#ffffff" />
                   <Text style={styles.checkInButtonText}>{t('i_have_arrived')}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {tokenDetails.token && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleCancelToken}
+              disabled={cancelling}
+              style={styles.cancelPassButton}
+              accessibilityLabel={t('cancel_token') || 'Cancel Token'}
+            >
+              {cancelling ? (
+                <ActivityIndicator size="small" color="#dc2626" />
+              ) : (
+                <>
+                  <XCircle size={16} color="#dc2626" />
+                  <Text style={styles.cancelPassButtonText}>{t('cancel_token') || 'Cancel Token'}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -303,6 +356,24 @@ const styles = StyleSheet.create({
   },
   checkInButtonText: {
     color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  cancelPassButton: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fca5a5',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+    width: '100%',
+  },
+  cancelPassButtonText: {
+    color: '#dc2626',
     fontSize: 12,
     fontWeight: '800',
   },
