@@ -2,13 +2,18 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native-web';
 import { useLanguage } from '../../../lib/language-context';
 import { fetchApi } from '../../../lib/api';
 import { TokenLiveTracker } from '../../../components/TokenLiveTracker';
 import {
-  Clock,
-  MapPin,
-  CheckCircle2,
   RefreshCw,
   QrCode,
   Truck,
@@ -64,83 +69,251 @@ function TokenTrackerContent() {
   };
 
   return (
-    <div className="space-y-4 bg-white text-emerald-950">
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
-      <div className="flex items-center justify-between px-1">
-        <div>
-          <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
-            ● Real-Time Queue Sync
-          </span>
-          <h1 className="text-xl font-black text-emerald-950 font-serif">
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.syncTag}>● Real-Time Queue Sync</Text>
+          <Text style={styles.pageTitle}>
             {language === 'hi' ? 'मेरा डिजिटल टोकन' : (language === 'mr' ? 'माझा डिजिटल टोकन' : 'My Digital Token')}
-          </h1>
-        </div>
+          </Text>
+        </View>
 
-        <button
-          onClick={loadToken}
-          className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3 py-1.5 rounded-xl border border-emerald-200 shadow-2xs flex items-center gap-1.5 transition"
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={loadToken}
+          style={styles.refreshButton}
+          accessibilityLabel="Refresh Token Status"
         >
-          <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
-          Refresh
-        </button>
-      </div>
+          <RefreshCw size={13} color="#047857" />
+          <Text style={styles.refreshButtonText}>Refresh</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Main Live Card */}
       <TokenLiveTracker tokenData={tokenDetails} onRefresh={loadToken} />
 
       {/* Digital Mandi Gate Pass QR Code Card */}
       {tokenDetails && (
-        <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-xs space-y-4 text-center">
-          <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 font-mono text-[11px] font-bold px-3 py-1 rounded-full border border-emerald-200">
-            <QrCode className="w-3.5 h-3.5 text-emerald-700" />
-            MANDI ENTRY PASS QR
-          </div>
+        <View style={styles.qrCard}>
+          <View style={styles.qrBadge}>
+            <QrCode size={14} color="#047857" />
+            <Text style={styles.qrBadgeText}>MANDI ENTRY PASS QR</Text>
+          </View>
 
-          <p className="text-xs text-emerald-800 max-w-xs mx-auto">
+          <Text style={styles.qrInstructions}>
             {language === 'hi'
               ? 'मंडी प्रवेश द्वार पर यह डिजिटल पास दिखाएँ।'
               : 'Show this digital pass at the entrance weighbridge gate.'}
-          </p>
+          </Text>
 
           {/* QR Box */}
-          <div className="bg-emerald-900 text-white p-4 rounded-2xl flex flex-col items-center justify-center shrink-0 border-2 border-emerald-600 shadow-sm mx-auto w-44">
-            <div className="w-28 h-28 bg-white rounded-xl p-2 flex items-center justify-center shadow-inner">
-              <div className="grid grid-cols-6 gap-1 w-full h-full p-1 bg-emerald-950 rounded-xs">
+          <View style={styles.qrOuterBox}>
+            <View style={styles.qrInnerWhite}>
+              <View style={styles.qrGrid}>
                 {Array.from({ length: 36 }).map((_, i) => (
-                  <div
+                  <View
                     key={i}
-                    className={`rounded-2xs ${
-                      (i % 2 === 0 || i % 5 === 0) ? 'bg-white' : 'bg-transparent'
-                    }`}
+                    style={[
+                      styles.qrPixel,
+                      (i % 2 === 0 || i % 5 === 0) ? styles.qrPixelFilled : styles.qrPixelEmpty,
+                    ]}
                   />
                 ))}
-              </div>
-            </div>
-            <div className="mt-2 text-xs font-mono font-bold text-amber-300">
-              {tokenDetails.token.tokenNumber}
-            </div>
-          </div>
+              </View>
+            </View>
+            <Text style={styles.qrTokenText}>{tokenDetails.token.tokenNumber}</Text>
+          </View>
 
           {tokenDetails.token.status === 'BOOKED' && (
-            <button
-              onClick={handleGateCheckIn}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleGateCheckIn}
               disabled={checkingIn}
-              className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-3 rounded-2xl shadow-xs transition flex items-center justify-center gap-2"
+              style={styles.checkInButton}
             >
-              <Truck className="w-4 h-4" />
-              {checkingIn ? 'Checking in...' : (language === 'hi' ? 'मैं मंडी पहुँच गया हूँ (चेक-इन)' : 'I Have Arrived at Mandi (Check In)')}
-            </button>
+              {checkingIn ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Truck size={16} color="#ffffff" />
+                  <Text style={styles.checkInButtonText}>
+                    {language === 'hi'
+                      ? 'मैं मंडी पहुँच गया हूँ (चेक-इन)'
+                      : 'I Have Arrived at Mandi (Check In)'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
           )}
-        </div>
+        </View>
       )}
-    </div>
+    </ScrollView>
   );
 }
 
 export default function TokenTrackerPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-xs text-emerald-700">Loading token...</div>}>
+    <Suspense
+      fallback={
+        <View style={{ padding: 32, alignItems: 'center' }}>
+          <ActivityIndicator size="small" color="#047857" />
+        </View>
+      }
+    >
       <TokenTrackerContent />
     </Suspense>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#ffffff',
+  },
+  content: {
+    paddingBottom: 24,
+    gap: 14,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  syncTag: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#047857',
+    textTransform: 'uppercase',
+  },
+  pageTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#064e3b',
+    marginTop: 2,
+  },
+  refreshButton: {
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  refreshButtonText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  qrCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#064e3b',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  qrBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  qrBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#064e3b',
+    letterSpacing: 0.5,
+  },
+  qrInstructions: {
+    fontSize: 11,
+    color: '#047857',
+    textAlign: 'center',
+    maxWidth: 260,
+  },
+  qrOuterBox: {
+    backgroundColor: '#064e3b',
+    borderRadius: 18,
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#047857',
+    shadowColor: '#064e3b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    width: 170,
+  },
+  qrInnerWhite: {
+    width: 110,
+    height: 110,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrGrid: {
+    width: '100%',
+    height: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    backgroundColor: '#064e3b',
+    borderRadius: 4,
+    padding: 4,
+  },
+  qrPixel: {
+    width: '16.66%',
+    height: '16.66%',
+  },
+  qrPixelFilled: {
+    backgroundColor: '#ffffff',
+  },
+  qrPixelEmpty: {
+    backgroundColor: 'transparent',
+  },
+  qrTokenText: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#fde047',
+    marginTop: 8,
+    letterSpacing: 0.5,
+  },
+  checkInButton: {
+    backgroundColor: '#047857',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    shadowColor: '#047857',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  checkInButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+});

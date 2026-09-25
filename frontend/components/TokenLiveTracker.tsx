@@ -2,17 +2,15 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native-web';
 import { useLanguage } from '../lib/language-context';
 import {
   Clock,
   MapPin,
   Users,
-  Navigation,
   CheckCircle2,
-  AlertCircle,
   Truck,
   ArrowRight,
-  Sparkles,
 } from 'lucide-react';
 
 interface TokenTrackerProps {
@@ -30,33 +28,36 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
 
   if (!tokenData || !tokenData.token) {
     return (
-      <div className="bg-white rounded-3xl p-6 border-2 border-emerald-100 shadow-xs text-center space-y-3">
-        <div className="w-12 h-12 bg-emerald-50 text-emerald-700 rounded-full flex items-center justify-center mx-auto">
-          <Clock className="w-6 h-6" />
-        </div>
-        <h3 className="text-base font-bold text-emerald-950">
-          {language === 'hi' ? 'आज के लिए कोई सक्रिय टोकन नहीं' : (language === 'mr' ? 'आजसाठी कोणताही सक्रिय टोकन नाही' : 'No Active Procurement Token Today')}
-        </h3>
-        <p className="text-xs text-emerald-800 max-w-sm mx-auto">
+      <View style={styles.emptyCard}>
+        <View style={styles.emptyIconBox}>
+          <Clock size={24} color="#047857" />
+        </View>
+        <Text style={styles.emptyTitle}>
+          {language === 'hi'
+            ? 'आज के लिए कोई सक्रिय टोकन नहीं'
+            : language === 'mr'
+            ? 'आजसाठी कोणताही सक्रिय टोकन नाही'
+            : 'No Active Procurement Token Today'}
+        </Text>
+        <Text style={styles.emptySubtitle}>
           {language === 'hi'
             ? 'बिना इंतज़ार अपनी फसल बेचने के लिए स्मार्ट केंद्र चुनें और टोकन स्लॉट बुक करें।'
             : 'Avoid waiting in long mandi lines. Schedule a guaranteed appointment slot.'}
-        </p>
-        <div className="pt-2 flex justify-center gap-2">
-          <Link
-            href="/farmer/book"
-            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-xs transition flex items-center gap-1.5"
-          >
-            {t('book_slot')} <ArrowRight className="w-4 h-4" />
+        </Text>
+        <View style={styles.emptyActions}>
+          <Link href="/farmer/book" style={{ textDecoration: 'none' }}>
+            <View style={styles.bookButton}>
+              <Text style={styles.bookButtonText}>{t('book_slot')}</Text>
+              <ArrowRight size={14} color="#ffffff" />
+            </View>
           </Link>
-          <Link
-            href="/farmer/recommendation"
-            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-xs px-4 py-2.5 rounded-xl border border-emerald-200 transition"
-          >
-            {t('get_recommendation')}
+          <Link href="/farmer/recommendation" style={{ textDecoration: 'none' }}>
+            <View style={styles.recButton}>
+              <Text style={styles.recButtonText}>{t('get_recommendation')}</Text>
+            </View>
           </Link>
-        </div>
-      </div>
+        </View>
+      </View>
     );
   }
 
@@ -70,8 +71,6 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
     estimatedWaitMinutes,
     estimatedCallTime,
     recommendedDepartureTime,
-    travelEstimateMinutes,
-    bufferMinutes,
     arrivalStatus,
     statusMessage,
     subMessage,
@@ -81,125 +80,407 @@ export const TokenLiveTracker: React.FC<TokenTrackerProps> = ({
   const isDoNotLeave = arrivalStatus === 'DO_NOT_LEAVE_YET';
 
   return (
-    <div className="bg-white rounded-3xl border-2 border-emerald-200 shadow-sm overflow-hidden text-emerald-950">
-      {/* Top Banner: No-Wait Smart Arrival Guidance (Section 12) */}
-      <div
-        className={`px-4 py-3 flex items-start justify-between gap-2.5 text-white ${
+    <View style={styles.cardContainer}>
+      {/* Top Advisory Banner */}
+      <View
+        style={[
+          styles.banner,
           isDepartureAlert
-            ? 'bg-amber-600'
+            ? styles.bannerAlert
             : isDoNotLeave
-            ? 'bg-emerald-800'
-            : 'bg-emerald-700'
-        }`}
+            ? styles.bannerWait
+            : styles.bannerReady,
+        ]}
       >
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+        <View style={styles.bannerLeft}>
+          <View style={styles.bannerIconBox}>
             {isDepartureAlert ? (
-              <Truck className="w-5 h-5 text-white animate-bounce" />
+              <Truck size={18} color="#ffffff" />
             ) : isDoNotLeave ? (
-              <Clock className="w-5 h-5 text-white" />
+              <Clock size={18} color="#ffffff" />
             ) : (
-              <CheckCircle2 className="w-5 h-5 text-white" />
+              <CheckCircle2 size={18} color="#ffffff" />
             )}
-          </div>
-          <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-white/20">
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bannerBadge}>
               {language === 'hi' ? 'प्रस्थान सलाह' : 'Departure Guide'}
-            </span>
-            <h3 className="text-sm font-black leading-tight mt-0.5">{statusMessage}</h3>
-            <p className="text-[11px] text-white/90 leading-tight">{subMessage}</p>
-          </div>
-        </div>
+            </Text>
+            <Text style={styles.bannerTitle}>{statusMessage}</Text>
+            <Text style={styles.bannerSub}>{subMessage}</Text>
+          </View>
+        </View>
 
         {isDoNotLeave && (
-          <div className="bg-white/10 backdrop-blur-xs rounded-xl px-2.5 py-1.5 border border-white/20 text-right shrink-0">
-            <span className="text-[9px] text-emerald-200 font-bold block">Depart At</span>
-            <span className="text-xs font-black text-white">{recommendedDepartureTime}</span>
-          </div>
+          <View style={styles.departureBox}>
+            <Text style={styles.departureBoxLabel}>Depart At</Text>
+            <Text style={styles.departureBoxTime}>{recommendedDepartureTime}</Text>
+          </View>
         )}
-      </div>
+      </View>
 
       {/* Main Token Info Card */}
-      <div className="p-4 space-y-4">
-        {/* Token Badge & Mandi */}
-        <div className="flex items-center justify-between bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-100">
-          <div>
-            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
-              YOUR TOKEN
-            </span>
-            <span className="text-3xl font-black text-emerald-900 tracking-tight">
-              {token.tokenNumber}
-            </span>
-            <div className="text-xs text-emerald-800 font-semibold flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{centre.name}</span>
-            </div>
-          </div>
+      <View style={styles.tokenBody}>
+        {/* Token Number & Details */}
+        <View style={styles.tokenRow}>
+          <View>
+            <Text style={styles.tokenLabel}>YOUR TOKEN</Text>
+            <Text style={styles.tokenNumber}>{token.tokenNumber}</Text>
+            <View style={styles.mandiLocation}>
+              <MapPin size={13} color="#047857" />
+              <Text style={styles.mandiLocationText}>{centre.name}</Text>
+            </View>
+          </View>
 
-          <div className="text-right">
-            <span className="bg-emerald-200 text-emerald-900 text-[11px] font-bold px-2.5 py-1 rounded-full block w-fit ml-auto">
-              {token.status}
-            </span>
-            <span className="text-xs text-emerald-700 font-medium block mt-1">
-              Slot: {token.appointmentTime}
-            </span>
-            <span className="text-[11px] text-emerald-800 font-bold block">
+          <View style={styles.tokenRight}>
+            <View style={styles.statusPill}>
+              <Text style={styles.statusPillText}>{token.status}</Text>
+            </View>
+            <Text style={styles.tokenSlotText}>Slot: {token.appointmentTime}</Text>
+            <Text style={styles.tokenCropText}>
               {token.booking?.crop} • {token.booking?.quantity} qtl
-            </span>
-          </div>
-        </div>
+            </Text>
+          </View>
+        </View>
 
-        {/* 4-Box Queue Metrics Grid */}
-        <div className="grid grid-cols-2 gap-2 text-center">
-          <div className="bg-white p-3 rounded-2xl border border-emerald-100 shadow-2xs">
-            <span className="text-[10px] font-bold text-emerald-800 uppercase flex items-center justify-center gap-1">
-              <Users className="w-3 h-3 text-emerald-600" />
-              Farmers Ahead
-            </span>
-            <span className="text-2xl font-black text-emerald-950 block mt-0.5">{farmersAhead}</span>
-            <span className="text-[10px] text-emerald-700 font-medium">Position #{queuePosition}</span>
-          </div>
+        {/* 4 Metric Boxes */}
+        <View style={styles.grid2x2}>
+          <View style={styles.metricCard}>
+            <View style={styles.metricHeader}>
+              <Users size={12} color="#047857" />
+              <Text style={styles.metricLabel}>Farmers Ahead</Text>
+            </View>
+            <Text style={styles.metricValueLarge}>{farmersAhead}</Text>
+            <Text style={styles.metricSub}>Position #{queuePosition}</Text>
+          </View>
 
-          <div className="bg-white p-3 rounded-2xl border border-emerald-100 shadow-2xs">
-            <span className="text-[10px] font-bold text-emerald-800 uppercase flex items-center justify-center gap-1">
-              <Clock className="w-3 h-3 text-emerald-600" />
-              Est. Wait
-            </span>
-            <span className="text-2xl font-black text-emerald-700 block mt-0.5">
-              {estimatedWaitMinutes} <span className="text-xs font-normal">min</span>
-            </span>
-            <span className="text-[10px] text-emerald-700 font-medium">Turn ~{estimatedCallTime}</span>
-          </div>
+          <View style={styles.metricCard}>
+            <View style={styles.metricHeader}>
+              <Clock size={12} color="#047857" />
+              <Text style={styles.metricLabel}>Est. Wait</Text>
+            </View>
+            <Text style={styles.metricValueGreen}>
+              {estimatedWaitMinutes} <Text style={{ fontSize: 13, fontWeight: '500' }}>min</Text>
+            </Text>
+            <Text style={styles.metricSub}>Turn ~{estimatedCallTime}</Text>
+          </View>
 
-          <div className="bg-white p-3 rounded-2xl border border-emerald-100 shadow-2xs">
-            <span className="text-[10px] font-bold text-emerald-800 uppercase block">Now Serving</span>
-            <span className="text-xl font-black text-emerald-900 block mt-0.5">
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Now Serving</Text>
+            <Text style={styles.metricValueGreenDark}>
               {currentServing ? currentServing.tokenNumber : 'B-035'}
-            </span>
-            <span className="text-[10px] text-emerald-700">Counter #1</span>
-          </div>
+            </Text>
+            <Text style={styles.metricSub}>Counter #1</Text>
+          </View>
 
-          <div className="bg-white p-3 rounded-2xl border border-emerald-100 shadow-2xs">
-            <span className="text-[10px] font-bold text-emerald-800 uppercase block">Next in Line</span>
-            <span className="text-xl font-black text-amber-600 block mt-0.5">
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Next in Line</Text>
+            <Text style={styles.metricValueAmber}>
               {nextInLine ? nextInLine.tokenNumber : 'B-036'}
-            </span>
-            <span className="text-[10px] text-emerald-700">Counter #2</span>
-          </div>
-        </div>
+            </Text>
+            <Text style={styles.metricSub}>Counter #2</Text>
+          </View>
+        </View>
 
-        {/* Action Button */}
+        {/* Track Full Page CTA */}
         {!compact && (
-          <div className="pt-1">
-            <Link
-              href="/farmer/token"
-              className="w-full bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold py-3 rounded-2xl shadow-xs transition flex items-center justify-center gap-2 text-xs"
-            >
-              <Clock className="w-4 h-4" /> {t('track_my_token')}
-            </Link>
-          </div>
+          <Link href="/farmer/token" style={{ textDecoration: 'none' }}>
+            <View style={styles.fullTrackButton}>
+              <Clock size={16} color="#ffffff" />
+              <Text style={styles.fullTrackButtonText}>{t('track_my_token')}</Text>
+            </View>
+          </Link>
         )}
-      </div>
-    </div>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  emptyCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: '#d1fae5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#064e3b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  emptyIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ecfdf5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#064e3b',
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: '#047857',
+    textAlign: 'center',
+    maxWidth: 280,
+  },
+  emptyActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  bookButton: {
+    backgroundColor: '#047857',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  bookButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  recButton: {
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  recButtonText: {
+    color: '#064e3b',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  cardContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#a7f3d0',
+    overflow: 'hidden',
+    shadowColor: '#064e3b',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  banner: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  bannerAlert: {
+    backgroundColor: '#d97706',
+  },
+  bannerWait: {
+    backgroundColor: '#064e3b',
+  },
+  bannerReady: {
+    backgroundColor: '#047857',
+  },
+  bannerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  bannerIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bannerBadge: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#fef3c7',
+    letterSpacing: 0.5,
+  },
+  bannerTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#ffffff',
+  },
+  bannerSub: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  departureBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignItems: 'flex-end',
+  },
+  departureBoxLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#a7f3d0',
+  },
+  departureBoxTime: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#ffffff',
+  },
+  tokenBody: {
+    padding: 16,
+    gap: 14,
+  },
+  tokenRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ecfdf5',
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+  },
+  tokenLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#047857',
+    letterSpacing: 0.5,
+  },
+  tokenNumber: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#064e3b',
+    letterSpacing: -0.5,
+  },
+  mandiLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  mandiLocationText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#047857',
+  },
+  tokenRight: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  statusPill: {
+    backgroundColor: '#d1fae5',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#064e3b',
+  },
+  tokenSlotText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#047857',
+    marginTop: 2,
+  },
+  tokenCropText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#064e3b',
+  },
+  grid2x2: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  metricCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    borderRadius: 16,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#064e3b',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  metricHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metricLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#047857',
+    textTransform: 'uppercase',
+  },
+  metricValueLarge: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#064e3b',
+    marginVertical: 2,
+  },
+  metricValueGreen: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#047857',
+    marginVertical: 2,
+  },
+  metricValueGreenDark: {
+    fontSize: 19,
+    fontWeight: '900',
+    color: '#064e3b',
+    marginVertical: 2,
+  },
+  metricValueAmber: {
+    fontSize: 19,
+    fontWeight: '900',
+    color: '#d97706',
+    marginVertical: 2,
+  },
+  metricSub: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#047857',
+  },
+  fullTrackButton: {
+    backgroundColor: '#047857',
+    borderRadius: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    shadowColor: '#047857',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  fullTrackButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+});

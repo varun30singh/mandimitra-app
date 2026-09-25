@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { View, Text, ScrollView, StyleSheet } from 'react-native-web';
 import { useLanguage } from '../../../lib/language-context';
 import { fetchApi } from '../../../lib/api';
-import { MapPin, Clock, Users, ArrowRight, Sparkles } from 'lucide-react';
+import { MapPin, ArrowRight, Sparkles } from 'lucide-react';
 
 export default function FarmerCentresPage() {
   const { language, t } = useLanguage();
@@ -19,91 +20,284 @@ export default function FarmerCentresPage() {
   }, []);
 
   return (
-    <div className="space-y-4 bg-white text-emerald-950">
-      <div className="flex items-center justify-between px-1">
-        <div>
-          <h1 className="text-xl font-black text-emerald-950 font-serif">
-            {t('nearby_centres')}
-          </h1>
-          <p className="text-xs text-emerald-700">
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.pageTitle}>{t('nearby_centres')}</Text>
+          <Text style={styles.pageSubtitle}>
             Real-time live queue and wait times across all mandis
-          </p>
-        </div>
+          </Text>
+        </View>
 
-        <Link
-          href="/farmer/recommendation"
-          className="bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 font-bold text-[11px] px-3 py-1.5 rounded-xl transition flex items-center gap-1 shadow-2xs"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-          {language === 'hi' ? 'स्मार्ट सुझाव' : 'AI Pick'}
+        <Link href="/farmer/recommendation" style={{ textDecoration: 'none' }}>
+          <View style={styles.aiPickButton}>
+            <Sparkles size={13} color="#047857" />
+            <Text style={styles.aiPickButtonText}>
+              {language === 'hi' ? 'स्मार्ट सुझाव' : 'AI Pick'}
+            </Text>
+          </View>
         </Link>
-      </div>
+      </View>
 
-      <div className="space-y-3">
+      <View style={styles.cardsList}>
         {centres.map((c) => {
-          let badgeColor = 'bg-emerald-100 text-emerald-900 border-emerald-300';
-          if (c.waitLevel === 'Moderate') badgeColor = 'bg-amber-100 text-amber-900 border-amber-300';
-          else if (c.waitLevel === 'Busy') badgeColor = 'bg-orange-100 text-orange-900 border-orange-300';
-          else if (c.waitLevel === 'Full') badgeColor = 'bg-rose-100 text-rose-900 border-rose-300';
+          const isFull = c.waitLevel === 'Full';
+          const isBusy = c.waitLevel === 'Busy' || c.waitLevel === 'Moderate';
 
           return (
-            <div
-              key={c.id}
-              className="bg-white rounded-3xl p-4 border border-emerald-100 shadow-xs space-y-3"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                    {c.code}
-                  </span>
-                  <h3 className="text-base font-black text-emerald-950 mt-1">{c.name}</h3>
-                  <p className="text-xs text-emerald-700 flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{c.distanceKm} km away</span>
-                    <span>•</span>
-                    <span>{c.taluka}</span>
-                  </p>
-                </div>
+            <View key={c.id} style={styles.centreCard}>
+              <View style={styles.cardTop}>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.codeBadge}>
+                    <Text style={styles.codeBadgeText}>{c.code}</Text>
+                  </View>
+                  <Text style={styles.centreName}>{c.name}</Text>
+                  <View style={styles.metaRow}>
+                    <MapPin size={12} color="#047857" />
+                    <Text style={styles.metaText}>
+                      {c.distanceKm} km away • {c.taluka}
+                    </Text>
+                  </View>
+                </View>
 
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}`}>
-                  {c.waitLevel}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2 bg-emerald-50/50 p-2.5 rounded-2xl text-center text-xs">
-                <div>
-                  <span className="text-[10px] text-emerald-800 font-semibold block">Queue</span>
-                  <span className="font-extrabold text-emerald-950">{c.currentQueue}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-emerald-800 font-semibold block">Wait</span>
-                  <span className="font-extrabold text-emerald-700">~{c.estimatedWaitMinutes}m</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-emerald-800 font-semibold block">Capacity</span>
-                  <span className="font-extrabold text-emerald-950">{c.capacityUtilization}%</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-emerald-800 font-semibold block">Slots</span>
-                  <span className="font-extrabold text-emerald-700">{c.availableSlots}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-1 text-xs">
-                <span className="text-emerald-700 text-[11px]">
-                  Speed: ~{c.processingSpeed}m/farmer
-                </span>
-                <Link
-                  href={`/farmer/book?centreId=${c.id}`}
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-xl transition flex items-center gap-1 text-xs shadow-xs"
+                <View
+                  style={[
+                    styles.waitLevelBadge,
+                    isFull
+                      ? styles.waitLevelFull
+                      : isBusy
+                      ? styles.waitLevelBusy
+                      : styles.waitLevelLow,
+                  ]}
                 >
-                  Book Slot <ArrowRight className="w-3.5 h-3.5" />
+                  <Text
+                    style={[
+                      styles.waitLevelText,
+                      isFull
+                        ? styles.waitLevelTextFull
+                        : isBusy
+                        ? styles.waitLevelTextBusy
+                        : styles.waitLevelTextLow,
+                    ]}
+                  >
+                    {c.waitLevel}
+                  </Text>
+                </View>
+              </View>
+
+              {/* 4 Metric Boxes */}
+              <View style={styles.metricsGrid}>
+                <View style={styles.metricBox}>
+                  <Text style={styles.metricLabel}>Queue</Text>
+                  <Text style={styles.metricVal}>{c.currentQueue}</Text>
+                </View>
+                <View style={styles.metricBox}>
+                  <Text style={styles.metricLabel}>Wait</Text>
+                  <Text style={styles.metricValGreen}>~{c.estimatedWaitMinutes}m</Text>
+                </View>
+                <View style={styles.metricBox}>
+                  <Text style={styles.metricLabel}>Capacity</Text>
+                  <Text style={styles.metricVal}>{c.capacityUtilization}%</Text>
+                </View>
+                <View style={styles.metricBox}>
+                  <Text style={styles.metricLabel}>Slots</Text>
+                  <Text style={styles.metricValGreen}>{c.availableSlots}</Text>
+                </View>
+              </View>
+
+              <View style={styles.cardFooter}>
+                <Text style={styles.speedLabel}>Speed: ~{c.processingSpeed}m/farmer</Text>
+                <Link href={`/farmer/book?centreId=${c.id}`} style={{ textDecoration: 'none' }}>
+                  <View style={styles.bookButton}>
+                    <Text style={styles.bookButtonText}>Book Slot</Text>
+                    <ArrowRight size={12} color="#ffffff" />
+                  </View>
                 </Link>
-              </div>
-            </div>
+              </View>
+            </View>
           );
         })}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#ffffff',
+  },
+  content: {
+    paddingBottom: 24,
+    gap: 14,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  pageTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#064e3b',
+  },
+  pageSubtitle: {
+    fontSize: 11,
+    color: '#047857',
+    marginTop: 2,
+  },
+  aiPickButton: {
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  aiPickButtonText: {
+    color: '#064e3b',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  cardsList: {
+    gap: 12,
+  },
+  centreCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 22,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    gap: 12,
+    shadowColor: '#064e3b',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  codeBadge: {
+    backgroundColor: '#ecfdf5',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  codeBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#047857',
+  },
+  centreName: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#064e3b',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  metaText: {
+    fontSize: 11,
+    color: '#047857',
+  },
+  waitLevelBadge: {
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  waitLevelLow: {
+    backgroundColor: '#d1fae5',
+    borderColor: '#a7f3d0',
+  },
+  waitLevelBusy: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#fde68a',
+  },
+  waitLevelFull: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#fecaca',
+  },
+  waitLevelText: {
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  waitLevelTextLow: {
+    color: '#064e3b',
+  },
+  waitLevelTextBusy: {
+    color: '#92400e',
+  },
+  waitLevelTextFull: {
+    color: '#991b1b',
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    backgroundColor: '#f0fdf4',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  metricBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  metricVal: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#064e3b',
+    marginTop: 2,
+  },
+  metricValGreen: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#047857',
+    marginTop: 2,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  speedLabel: {
+    fontSize: 10,
+    color: '#047857',
+  },
+  bookButton: {
+    backgroundColor: '#047857',
+    borderRadius: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    shadowColor: '#047857',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  bookButtonText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+});

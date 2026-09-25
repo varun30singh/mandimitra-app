@@ -1,6 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  StyleSheet as RNStyleSheet,
+  ActivityIndicator,
+} from 'react-native-web';
 import { useLanguage, Language } from '../lib/language-context';
 import { fetchApi } from '../lib/api';
 import {
@@ -8,12 +17,9 @@ import {
   User,
   Globe,
   Lock,
-  MapPin,
-  ShieldCheck,
   CheckCircle2,
   Save,
-  LogOut,
-  Wheat,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface ProfileModalProps {
@@ -22,7 +28,7 @@ interface ProfileModalProps {
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'language'>('profile');
 
   // Profile fields
@@ -59,8 +65,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
   if (!isOpen) return null;
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveProfile = async () => {
     setSaving(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -94,8 +99,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
     }
   };
 
-  const handleSavePassword = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSavePassword = () => {
     if (newPassword !== confirmPassword) {
       setErrorMsg('New password and confirmation do not match');
       return;
@@ -116,283 +120,527 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div
-        className="w-full sm:max-w-md max-h-[90vh] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-emerald-100"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Drawer Drag handle for mobile */}
-        <div className="w-12 h-1.5 bg-emerald-200 rounded-full mx-auto mt-3 sm:hidden" />
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalCard}>
+        {/* Mobile drag handle */}
+        <View style={styles.dragHandle} />
 
         {/* Modal Header */}
-        <div className="px-6 py-4 flex items-center justify-between border-b border-emerald-100 bg-emerald-50/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-              {fullName.charAt(0)}
-            </div>
-            <div>
-              <h3 className="font-bold text-emerald-950 text-base">{fullName}</h3>
-              <p className="text-xs text-emerald-700 font-mono">
+        <View style={styles.modalHeader}>
+          <View style={styles.headerLeft}>
+            <View style={styles.headerAvatar}>
+              <Text style={styles.headerAvatarText}>{fullName.charAt(0)}</Text>
+            </View>
+            <View>
+              <Text style={styles.headerTitle}>{fullName}</Text>
+              <Text style={styles.headerSubtitle}>
                 {farmer ? farmer.farmerId : 'MH-NAS-2026-0812'}
-              </p>
-            </div>
-          </div>
+              </Text>
+            </View>
+          </View>
 
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-200 flex items-center justify-center transition"
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={onClose}
+            style={styles.closeButton}
+            accessibilityLabel="Close"
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            <X size={18} color="#064e3b" />
+          </TouchableOpacity>
+        </View>
 
         {/* Tab Switcher */}
-        <div className="flex border-b border-emerald-100 px-6 pt-2 bg-white">
-          <button
-            type="button"
-            onClick={() => setActiveTab('profile')}
-            className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition flex items-center justify-center gap-1.5 ${
-              activeTab === 'profile'
-                ? 'border-emerald-600 text-emerald-800'
-                : 'border-transparent text-emerald-600/70 hover:text-emerald-900'
-            }`}
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('profile')}
+            style={[styles.tabButton, activeTab === 'profile' && styles.tabButtonActive]}
           >
-            <User className="w-3.5 h-3.5" />
-            {language === 'hi' ? 'नाम एवं विवरण' : 'Edit Profile'}
-          </button>
+            <User size={14} color={activeTab === 'profile' ? '#047857' : '#064e3b'} />
+            <Text style={[styles.tabText, activeTab === 'profile' && styles.tabTextActive]}>
+              {language === 'hi' ? 'नाम एवं विवरण' : 'Edit Profile'}
+            </Text>
+          </TouchableOpacity>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('language')}
-            className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition flex items-center justify-center gap-1.5 ${
-              activeTab === 'language'
-                ? 'border-emerald-600 text-emerald-800'
-                : 'border-transparent text-emerald-600/70 hover:text-emerald-900'
-            }`}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('language')}
+            style={[styles.tabButton, activeTab === 'language' && styles.tabButtonActive]}
           >
-            <Globe className="w-3.5 h-3.5" />
-            {language === 'hi' ? 'भाषा (Language)' : 'Language'}
-          </button>
+            <Globe size={14} color={activeTab === 'language' ? '#047857' : '#064e3b'} />
+            <Text style={[styles.tabText, activeTab === 'language' && styles.tabTextActive]}>
+              {language === 'hi' ? 'भाषा (Language)' : 'Language'}
+            </Text>
+          </TouchableOpacity>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('password')}
-            className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition flex items-center justify-center gap-1.5 ${
-              activeTab === 'password'
-                ? 'border-emerald-600 text-emerald-800'
-                : 'border-transparent text-emerald-600/70 hover:text-emerald-900'
-            }`}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('password')}
+            style={[styles.tabButton, activeTab === 'password' && styles.tabButtonActive]}
           >
-            <Lock className="w-3.5 h-3.5" />
-            {language === 'hi' ? 'पासवर्ड / पिन' : 'Password'}
-          </button>
-        </div>
+            <Lock size={14} color={activeTab === 'password' ? '#047857' : '#064e3b'} />
+            <Text style={[styles.tabText, activeTab === 'password' && styles.tabTextActive]}>
+              {language === 'hi' ? 'पासवर्ड / पिन' : 'Password'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
+        {/* Scrollable Body */}
+        <ScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
           {successMsg && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold p-3 rounded-xl flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              {successMsg}
-            </div>
+            <View style={styles.alertSuccess}>
+              <CheckCircle2 size={16} color="#047857" />
+              <Text style={styles.alertSuccessText}>{successMsg}</Text>
+            </View>
           )}
 
           {errorMsg && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold p-3 rounded-xl">
-              {errorMsg}
-            </div>
+            <View style={styles.alertError}>
+              <Text style={styles.alertErrorText}>{errorMsg}</Text>
+            </View>
           )}
 
           {/* TAB 1: EDIT PROFILE */}
           {activeTab === 'profile' && (
-            <form onSubmit={handleSaveProfile} className="space-y-3.5">
-              <div>
-                <label className="text-xs font-bold text-emerald-900 block mb-1">
+            <View style={styles.formContainer}>
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>
                   {language === 'hi' ? 'किसान का पूरा नाम' : 'Farmer Full Name'}
-                </label>
-                <input
-                  type="text"
+                </Text>
+                <TextInput
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-white border border-emerald-200 rounded-xl px-3.5 py-2.5 text-sm text-emerald-950 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                  required
+                  onChangeText={setFullName}
+                  style={styles.textInput}
+                  placeholder="Enter full name"
+                  placeholderTextColor="#9ca3af"
                 />
-              </div>
+              </View>
 
-              <div>
-                <label className="text-xs font-bold text-emerald-900 block mb-1">
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>
                   {language === 'hi' ? 'गाँव (Village)' : 'Village'}
-                </label>
-                <input
-                  type="text"
+                </Text>
+                <TextInput
                   value={village}
-                  onChange={(e) => setVillage(e.target.value)}
-                  className="w-full bg-white border border-emerald-200 rounded-xl px-3.5 py-2.5 text-sm text-emerald-950 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                  required
+                  onChangeText={setVillage}
+                  style={styles.textInput}
+                  placeholder="Enter village"
+                  placeholderTextColor="#9ca3af"
                 />
-              </div>
+              </View>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-emerald-900 block mb-1">
+              <View style={styles.formRow}>
+                <View style={[styles.formGroup, { flex: 1 }]}>
+                  <Text style={styles.inputLabel}>
                     {language === 'hi' ? 'तहसील (Taluka)' : 'Taluka'}
-                  </label>
-                  <input
-                    type="text"
+                  </Text>
+                  <TextInput
                     value={taluka}
-                    onChange={(e) => setTaluka(e.target.value)}
-                    className="w-full bg-white border border-emerald-200 rounded-xl px-3.5 py-2.5 text-sm text-emerald-950 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                    required
+                    onChangeText={setTaluka}
+                    style={styles.textInput}
+                    placeholder="Taluka"
+                    placeholderTextColor="#9ca3af"
                   />
-                </div>
+                </View>
 
-                <div>
-                  <label className="text-xs font-bold text-emerald-900 block mb-1">
+                <View style={[styles.formGroup, { flex: 1 }]}>
+                  <Text style={styles.inputLabel}>
                     {language === 'hi' ? 'ज़िला (District)' : 'District'}
-                  </label>
-                  <input
-                    type="text"
+                  </Text>
+                  <TextInput
                     value={district}
-                    onChange={(e) => setDistrict(e.target.value)}
-                    className="w-full bg-white border border-emerald-200 rounded-xl px-3.5 py-2.5 text-sm text-emerald-950 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                    required
+                    onChangeText={setDistrict}
+                    style={styles.textInput}
+                    placeholder="District"
+                    placeholderTextColor="#9ca3af"
                   />
-                </div>
-              </div>
+                </View>
+              </View>
 
-              <div>
-                <label className="text-xs font-bold text-emerald-900 block mb-1">
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>
                   {language === 'hi' ? 'मुख्य फसल (Primary Crop)' : 'Primary Crop'}
-                </label>
-                <select
+                </Text>
+                <TextInput
                   value={defaultCrop}
-                  onChange={(e) => setDefaultCrop(e.target.value)}
-                  className="w-full bg-white border border-emerald-200 rounded-xl px-3.5 py-2.5 text-sm text-emerald-950 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                >
-                  <option value="Wheat">Wheat / गेहूँ (MSP: ₹2,275/qtl)</option>
-                  <option value="Onion">Onion / प्याज</option>
-                  <option value="Soybean">Soybean / सोयाबीन</option>
-                  <option value="Gram">Gram / चना</option>
-                </select>
-              </div>
+                  onChangeText={setDefaultCrop}
+                  style={styles.textInput}
+                  placeholder="e.g. Wheat, Onion, Soybean"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
 
-              <button
-                type="submit"
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handleSaveProfile}
                 disabled={saving}
-                className="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold py-3 rounded-xl shadow-xs transition flex items-center justify-center gap-2 mt-2"
+                style={[styles.primaryButton, saving && styles.buttonDisabled]}
               >
-                <Save className="w-4 h-4" />
-                {saving ? 'Saving...' : (language === 'hi' ? 'परिवर्तन सहेजें' : 'Save Profile Changes')}
-              </button>
-            </form>
+                {saving ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <>
+                    <Save size={16} color="#ffffff" />
+                    <Text style={styles.primaryButtonText}>
+                      {language === 'hi' ? 'परिवर्तन सहेजें' : 'Save Profile Changes'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* TAB 2: SELECT LANGUAGE */}
           {activeTab === 'language' && (
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-emerald-900 block">
-                {language === 'hi' ? 'पसंदीदा भाषा चुनें' : (language === 'mr' ? 'पसंतीची भाषा निवडा' : 'Select Preferred Language')}
-              </label>
+            <View style={styles.formContainer}>
+              <Text style={styles.inputLabel}>
+                {language === 'hi'
+                  ? 'पसंदीदा भाषा चुनें'
+                  : language === 'mr'
+                  ? 'पसंतीची भाषा निवडा'
+                  : 'Select Preferred Language'}
+              </Text>
 
               {[
                 { code: 'en', label: 'English', sub: 'Standard English interface' },
                 { code: 'hi', label: 'हिन्दी (Hindi)', sub: 'सरल हिन्दी इंटरफेस' },
                 { code: 'mr', label: 'मराठी (Marathi)', sub: 'मराठी भाषा इंटरफेस' },
               ].map((langItem) => {
-                const selected = language === langItem.code;
+                const isSelected = language === langItem.code;
                 return (
-                  <button
+                  <TouchableOpacity
                     key={langItem.code}
-                    type="button"
-                    onClick={() => {
+                    activeOpacity={0.8}
+                    onPress={() => {
                       setLanguage(langItem.code as Language);
                       setSuccessMsg(`Language switched to ${langItem.label}`);
                       setTimeout(() => setSuccessMsg(null), 2000);
                     }}
-                    className={`w-full p-3.5 rounded-2xl border text-left flex items-center justify-between transition ${
-                      selected
-                        ? 'border-emerald-600 bg-emerald-50/70 text-emerald-900 ring-2 ring-emerald-500'
-                        : 'border-emerald-100 hover:bg-emerald-50/30 text-emerald-950'
-                    }`}
+                    style={[styles.langCard, isSelected && styles.langCardSelected]}
                   >
-                    <div>
-                      <div className="font-bold text-sm text-emerald-950">{langItem.label}</div>
-                      <div className="text-xs text-emerald-700">{langItem.sub}</div>
-                    </div>
-                    {selected && (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                    )}
-                  </button>
+                    <View>
+                      <Text style={[styles.langLabel, isSelected && styles.langLabelSelected]}>
+                        {langItem.label}
+                      </Text>
+                      <Text style={styles.langSub}>{langItem.sub}</Text>
+                    </View>
+                    {isSelected && <CheckCircle2 size={18} color="#047857" />}
+                  </TouchableOpacity>
                 );
               })}
-            </div>
+            </View>
           )}
 
           {/* TAB 3: CHANGE PASSWORD / PIN */}
           {activeTab === 'password' && (
-            <form onSubmit={handleSavePassword} className="space-y-3.5">
-              <div>
-                <label className="text-xs font-bold text-emerald-900 block mb-1">
-                  Current Password / PIN
-                </label>
-                <input
-                  type="password"
+            <View style={styles.formContainer}>
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Current Password / PIN</Text>
+                <TextInput
                   value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  onChangeText={setCurrentPassword}
+                  secureTextEntry
                   placeholder="••••••••"
-                  className="w-full bg-white border border-emerald-200 rounded-xl px-3.5 py-2.5 text-sm text-emerald-950 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                  required
+                  placeholderTextColor="#9ca3af"
+                  style={styles.textInput}
                 />
-              </div>
+              </View>
 
-              <div>
-                <label className="text-xs font-bold text-emerald-900 block mb-1">
-                  New Password / PIN
-                </label>
-                <input
-                  type="password"
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>New Password / PIN</Text>
+                <TextInput
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChangeText={setNewPassword}
+                  secureTextEntry
                   placeholder="••••••••"
-                  className="w-full bg-white border border-emerald-200 rounded-xl px-3.5 py-2.5 text-sm text-emerald-950 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                  required
+                  placeholderTextColor="#9ca3af"
+                  style={styles.textInput}
                 />
-              </div>
+              </View>
 
-              <div>
-                <label className="text-xs font-bold text-emerald-900 block mb-1">
-                  Confirm New Password
-                </label>
-                <input
-                  type="password"
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Confirm New Password</Text>
+                <TextInput
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
                   placeholder="••••••••"
-                  className="w-full bg-white border border-emerald-200 rounded-xl px-3.5 py-2.5 text-sm text-emerald-950 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                  required
+                  placeholderTextColor="#9ca3af"
+                  style={styles.textInput}
                 />
-              </div>
+              </View>
 
-              <button
-                type="submit"
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handleSavePassword}
                 disabled={saving}
-                className="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold py-3 rounded-xl shadow-xs transition flex items-center justify-center gap-2 mt-2"
+                style={[styles.primaryButton, saving && styles.buttonDisabled]}
               >
-                <Lock className="w-4 h-4" />
-                {saving ? 'Updating...' : 'Update Password / PIN'}
-              </button>
-            </form>
+                {saving ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <>
+                    <Lock size={16} color="#ffffff" />
+                    <Text style={styles.primaryButtonText}>Update Password / PIN</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           )}
-        </div>
+        </ScrollView>
 
-        {/* Footer info */}
-        <div className="p-4 border-t border-emerald-100 bg-emerald-50/40 text-center">
-          <div className="text-[11px] text-emerald-800 font-semibold flex items-center justify-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+        {/* Modal Footer */}
+        <View style={styles.modalFooter}>
+          <ShieldCheck size={14} color="#047857" />
+          <Text style={styles.footerText}>
             Aadhaar-Linked Verified Mobile: +91-9822012345
-          </div>
-        </div>
-      </div>
-    </div>
+          </Text>
+        </View>
+      </View>
+    </View>
   );
 };
+
+const styles = RNStyleSheet.create({
+  modalOverlay: {
+    position: 'fixed' as any,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    zIndex: 50,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 448,
+    maxHeight: '90%',
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    overflow: 'hidden',
+  },
+  dragHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#a7f3d0',
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecfdf5',
+    backgroundColor: '#f0fdf4',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#047857',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatarText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  headerTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#064e3b',
+  },
+  headerSubtitle: {
+    fontSize: 11,
+    color: '#047857',
+    fontWeight: '600',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#d1fae5',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabButtonActive: {
+    borderBottomColor: '#047857',
+  },
+  tabText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#064e3b',
+  },
+  tabTextActive: {
+    fontWeight: '800',
+    color: '#047857',
+  },
+  modalBody: {
+    paddingHorizontal: 20,
+    backgroundColor: '#ffffff',
+  },
+  modalBodyContent: {
+    paddingVertical: 16,
+    gap: 14,
+  },
+  formContainer: {
+    gap: 12,
+  },
+  formGroup: {
+    gap: 4,
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#064e3b',
+  },
+  textInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: '#064e3b',
+    fontWeight: '500',
+  },
+  primaryButton: {
+    backgroundColor: '#047857',
+    borderRadius: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 6,
+    shadowColor: '#047857',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  alertSuccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 12,
+    padding: 10,
+  },
+  alertSuccessText: {
+    color: '#047857',
+    fontSize: 12,
+    fontWeight: '700',
+    flex: 1,
+  },
+  alertError: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 12,
+    padding: 10,
+  },
+  alertErrorText: {
+    color: '#991b1b',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  langCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    backgroundColor: '#ffffff',
+  },
+  langCardSelected: {
+    borderColor: '#047857',
+    backgroundColor: '#ecfdf5',
+    borderWidth: 2,
+  },
+  langLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#064e3b',
+  },
+  langLabelSelected: {
+    color: '#047857',
+  },
+  langSub: {
+    fontSize: 11,
+    color: '#047857',
+    marginTop: 2,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#ecfdf5',
+    backgroundColor: '#f0fdf4',
+  },
+  footerText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#047857',
+  },
+});

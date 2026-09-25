@@ -2,14 +2,21 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native-web';
 import { useLanguage } from '../../../lib/language-context';
 import { fetchApi } from '../../../lib/api';
 import {
-  Calendar,
   Clock,
   MapPin,
   Wheat,
-  CheckCircle2,
   AlertCircle,
   ArrowRight,
   Sparkles,
@@ -26,10 +33,18 @@ function BookSlotContent() {
   const [slots, setSlots] = useState<any[]>([]);
   const [selectedSlotId, setSelectedSlotId] = useState<string>('');
   const [crop, setCrop] = useState<string>('Wheat');
-  const [quantity, setQuantity] = useState<number>(85);
+  const [quantity, setQuantity] = useState<string>('85');
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Available crop options
+  const cropOptions = [
+    { label: 'Wheat / गेहूँ (MSP: ₹2,275)', value: 'Wheat' },
+    { label: 'Onion / प्याज (Graded Red)', value: 'Onion' },
+    { label: 'Soybean / सोयाबीन (MSP: ₹4,892)', value: 'Soybean' },
+    { label: 'Gram (Chana) / चना (MSP: ₹5,440)', value: 'Gram' },
+  ];
 
   // Load centres
   useEffect(() => {
@@ -38,7 +53,6 @@ function BookSlotContent() {
       if (preselectedCentreId) {
         setSelectedCentreId(preselectedCentreId);
       } else if (res.length > 0) {
-        // Default to Centre B (recommended)
         const centreB = res.find((c: any) => c.code === 'MANDI-NPH') || res[0];
         setSelectedCentreId(centreB.id);
       }
@@ -54,7 +68,6 @@ function BookSlotContent() {
     fetchApi(`/slots/centre/${selectedCentreId}`)
       .then((res) => {
         setSlots(res);
-        // Pre-select first available slot
         const available = res.find((s: any) => s.status !== 'Full');
         if (available) setSelectedSlotId(available.id);
       })
@@ -62,15 +75,13 @@ function BookSlotContent() {
       .finally(() => setLoadingSlots(false));
   }, [selectedCentreId]);
 
-  const handleBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleBooking = async () => {
     if (!selectedSlotId || !selectedCentreId) return;
 
     setBookingLoading(true);
     setError(null);
 
     try {
-      // Look up Ramesh farmer ID
       const farmer = await fetchApi('/farmers/MH-NAS-2026-0812');
 
       const result = await fetchApi('/bookings', {
@@ -80,11 +91,10 @@ function BookSlotContent() {
           centreId: selectedCentreId,
           slotId: selectedSlotId,
           crop,
-          quantity: parseFloat(quantity.toString()),
+          quantity: parseFloat(quantity) || 85,
         }),
       });
 
-      // Redirect directly to Token page
       router.push(`/farmer/token?token=${result.token.tokenNumber}&new=true`);
     } catch (err: any) {
       setError(err.message || 'Failed to book slot');
@@ -94,189 +104,521 @@ function BookSlotContent() {
   };
 
   return (
-    <div className="space-y-4 bg-white text-emerald-950">
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
-      <div className="px-1 space-y-0.5">
-        <h1 className="text-xl font-black text-emerald-950 font-serif">
+      <View style={styles.header}>
+        <Text style={styles.title}>
           {language === 'hi' ? 'खरीद स्लॉट बुकिंग' : (language === 'mr' ? 'खरेदी स्लॉट बुकिंग' : 'Book Procurement Slot')}
-        </h1>
-        <p className="text-xs text-emerald-700">
+        </Text>
+        <Text style={styles.subtitle}>
           {language === 'hi'
             ? 'अपनी पसंद का केंद्र, फसल और 30-मिनट का स्लॉट चुनें। टोकन तुरंत जारी होगा।'
             : 'Select centre, crop, and guaranteed 30-minute arrival window.'}
-        </p>
-      </div>
+        </Text>
+      </View>
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-3 flex items-center gap-2 text-xs">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-          <span>{error}</span>
-        </div>
+        <View style={styles.errorBox}>
+          <AlertCircle size={16} color="#991b1b" />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
       )}
 
-      <form onSubmit={handleBooking} className="bg-white rounded-3xl p-4 sm:p-5 border border-emerald-100 shadow-xs space-y-5">
+      {/* Main Form Card */}
+      <View style={styles.formCard}>
         {/* Step 1: Select Centre */}
-        <div className="space-y-2.5">
-          <label className="text-xs font-bold text-emerald-950 flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-              1. {language === 'hi' ? 'खरीद केंद्र चुनें' : 'Select Procurement Centre'}
-            </span>
-            <span className="text-[10px] text-emerald-700 font-medium">
+        <View style={styles.stepSection}>
+          <View style={styles.stepHeader}>
+            <View style={styles.stepTitleRow}>
+              <MapPin size={14} color="#047857" />
+              <Text style={styles.stepTitle}>
+                1. {language === 'hi' ? 'खरीद केंद्र चुनें' : 'Select Procurement Centre'}
+              </Text>
+            </View>
+            <Text style={styles.stepHint}>
               {language === 'hi' ? 'अनुशंसित: केंद्र B' : 'Recommended: Centre B'}
-            </span>
-          </label>
+            </Text>
+          </View>
 
-          <div className="space-y-2">
+          <View style={styles.centresList}>
             {centres.map((c) => {
               const selected = c.id === selectedCentreId;
               const isRecommended = c.code === 'MANDI-NPH';
 
               return (
-                <div
+                <TouchableOpacity
                   key={c.id}
-                  onClick={() => setSelectedCentreId(c.id)}
-                  className={`p-3 rounded-2xl border cursor-pointer transition relative ${
-                    selected
-                      ? 'border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-500'
-                      : 'border-emerald-100 hover:bg-emerald-50/30'
-                  }`}
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedCentreId(c.id)}
+                  style={[styles.centreTile, selected && styles.centreTileSelected]}
                 >
                   {isRecommended && (
-                    <span className="absolute top-2.5 right-2.5 text-[9px] bg-amber-400 text-emerald-950 font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
-                      <Sparkles className="w-2.5 h-2.5" /> Best Choice
-                    </span>
+                    <View style={styles.bestChoiceBadge}>
+                      <Sparkles size={10} color="#064e3b" />
+                      <Text style={styles.bestChoiceText}>Best Choice</Text>
+                    </View>
                   )}
-                  <h4 className="font-bold text-emerald-950 text-xs sm:text-sm">{c.name}</h4>
-                  <p className="text-[11px] text-emerald-700 mt-0.5">{c.address}, {c.taluka}</p>
-                  <div className="mt-1.5 flex items-center gap-2 text-[11px] text-emerald-800 font-semibold">
-                    <span>{c.distanceKm} km</span>
-                    <span>•</span>
-                    <span>Queue: {c.currentQueue}</span>
-                    <span>•</span>
-                    <span>Wait: ~{c.estimatedWaitMinutes}m</span>
-                  </div>
-                </div>
+                  <Text style={styles.centreTileName}>{c.name}</Text>
+                  <Text style={styles.centreTileSub}>{c.address}, {c.taluka}</Text>
+                  <View style={styles.centreTileMeta}>
+                    <Text style={styles.metaItem}>{c.distanceKm} km</Text>
+                    <Text style={styles.bullet}>•</Text>
+                    <Text style={styles.metaItem}>Queue: {c.currentQueue}</Text>
+                    <Text style={styles.bullet}>•</Text>
+                    <Text style={styles.metaItem}>Wait: ~{c.estimatedWaitMinutes}m</Text>
+                  </View>
+                </TouchableOpacity>
               );
             })}
-          </div>
-        </div>
+          </View>
+        </View>
 
         {/* Step 2: Produce & Quantity */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-              <Wheat className="w-3.5 h-3.5 text-emerald-600" />
-              2. {language === 'hi' ? 'फसल प्रकार' : 'Crop Type'}
-            </label>
-            <select
-              value={crop}
-              onChange={(e) => setCrop(e.target.value)}
-              className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-2.5 text-xs font-medium text-emerald-950 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-            >
-              <option value="Wheat">Wheat / गेहूँ (MSP: ₹2,275/qtl)</option>
-              <option value="Onion">Onion / प्याज (Graded Red)</option>
-              <option value="Soybean">Soybean / सोयाबीन (MSP: ₹4,892/qtl)</option>
-              <option value="Gram">Gram (Chana) / चना (MSP: ₹5,440/qtl)</option>
-              <option value="Cotton">Cotton / कपास (MSP: ₹7,121/qtl)</option>
-              <option value="Paddy">Paddy / धान (Common)</option>
-            </select>
-          </div>
+        <View style={styles.stepSection}>
+          <View style={styles.stepTitleRow}>
+            <Wheat size={14} color="#047857" />
+            <Text style={styles.stepTitle}>
+              2. {language === 'hi' ? 'फसल एवं मात्रा' : 'Crop & Quantity'}
+            </Text>
+          </View>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-emerald-950 block">
-              3. {language === 'hi' ? 'अनुमानित मात्रा (क्विंटल)' : 'Approx Quantity (Quintals)'}
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="500"
+          <View style={styles.cropSelectorRow}>
+            {cropOptions.map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                activeOpacity={0.8}
+                onPress={() => setCrop(opt.value)}
+                style={[styles.cropChip, crop === opt.value && styles.cropChipSelected]}
+              >
+                <Text style={[styles.cropChipText, crop === opt.value && styles.cropChipTextSelected]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              {language === 'hi' ? 'अनुमानित मात्रा (क्विंटल)' : 'Approx Quantity (Quintals)'}
+            </Text>
+            <TextInput
               value={quantity}
-              onChange={(e) => setQuantity(parseFloat(e.target.value))}
-              className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-2.5 text-xs font-medium text-emerald-950 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+              onChangeText={setQuantity}
+              keyboardType="numeric"
               placeholder="e.g. 85"
+              placeholderTextColor="#9ca3af"
+              style={styles.textInput}
             />
-          </div>
-        </div>
+          </View>
+        </View>
 
-        {/* Step 3: Dynamic Procurement Slot Selection */}
-        <div className="space-y-2.5 pt-1">
-          <label className="text-xs font-bold text-emerald-950 flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-emerald-600" />
-              4. {language === 'hi' ? '30-मिनट का आगमन स्लॉट चुनें' : 'Select 30-Min Arrival Slot'}
-            </span>
-            <span className="text-[10px] text-emerald-700">Today</span>
-          </label>
+        {/* Step 3: Dynamic Slot Selection */}
+        <View style={styles.stepSection}>
+          <View style={styles.stepHeader}>
+            <View style={styles.stepTitleRow}>
+              <Clock size={14} color="#047857" />
+              <Text style={styles.stepTitle}>
+                3. {language === 'hi' ? '30-मिनट का स्लॉट चुनें' : 'Select 30-Min Arrival Slot'}
+              </Text>
+            </View>
+            <Text style={styles.stepHint}>Today</Text>
+          </View>
 
           {loadingSlots ? (
-            <div className="p-6 text-center text-xs text-emerald-700">
-              Loading available slots...
-            </div>
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="small" color="#047857" />
+              <Text style={styles.loadingText}>Loading available slots...</Text>
+            </View>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <View style={styles.slotsGrid}>
               {slots.map((s) => {
                 const isSelected = s.id === selectedSlotId;
                 const isFull = s.status === 'Full';
                 const isLimited = s.status === 'Limited';
 
                 return (
-                  <button
+                  <TouchableOpacity
                     key={s.id}
-                    type="button"
+                    activeOpacity={0.8}
                     disabled={isFull}
-                    onClick={() => setSelectedSlotId(s.id)}
-                    className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
+                    onPress={() => setSelectedSlotId(s.id)}
+                    style={[
+                      styles.slotTile,
                       isSelected
-                        ? 'border-emerald-600 bg-emerald-700 text-white shadow-xs'
+                        ? styles.slotTileSelected
                         : isFull
-                        ? 'border-emerald-100 bg-emerald-50/30 text-emerald-800/40 cursor-not-allowed opacity-60'
+                        ? styles.slotTileFull
                         : isLimited
-                        ? 'border-amber-300 bg-amber-50/70 hover:border-amber-400 text-emerald-950'
-                        : 'border-emerald-200 bg-white hover:border-emerald-400 text-emerald-950'
-                    }`}
+                        ? styles.slotTileLimited
+                        : styles.slotTileDefault,
+                    ]}
                   >
-                    <div>
-                      <div className="font-extrabold text-xs">
-                        {s.startTime} - {s.endTime}
-                      </div>
-                      <div className="text-[10px] mt-0.5 opacity-80">{s.timeWindow}</div>
-                    </div>
-
-                    <div className="mt-2 pt-1.5 border-t border-current/10 flex items-center justify-between text-[10px] font-semibold">
-                      <span>{s.status}</span>
-                      <span>{s.remainingCapacity} spots</span>
-                    </div>
-                  </button>
+                    <Text
+                      style={[
+                        styles.slotTime,
+                        isSelected ? styles.slotTimeSelected : styles.slotTimeDefault,
+                      ]}
+                    >
+                      {s.startTime} - {s.endTime}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.slotWindow,
+                        isSelected ? styles.slotWindowSelected : styles.slotWindowDefault,
+                      ]}
+                    >
+                      {s.timeWindow}
+                    </Text>
+                    <View style={styles.slotFooter}>
+                      <Text
+                        style={[
+                          styles.slotStatus,
+                          isSelected ? styles.slotStatusSelected : styles.slotStatusDefault,
+                        ]}
+                      >
+                        {s.status}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.slotSpots,
+                          isSelected ? styles.slotSpotsSelected : styles.slotSpotsDefault,
+                        ]}
+                      >
+                        {s.remainingCapacity} spots
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
                 );
               })}
-            </div>
+            </View>
           )}
-        </div>
+        </View>
 
-        {/* Submit CTA */}
-        <div className="pt-2 border-t border-emerald-100 space-y-2">
-          <button
-            type="submit"
-            disabled={bookingLoading || !selectedSlotId}
-            className="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold py-3.5 rounded-2xl shadow-xs transition flex items-center justify-center gap-2 text-xs"
-          >
-            {bookingLoading ? 'Generating Token...' : (language === 'hi' ? 'पुष्टि करें एवं टोकन प्राप्त करें' : 'Confirm & Generate Token')}
-            <ArrowRight className="w-4 h-4" />
-          </button>
-          <p className="text-[10px] text-emerald-700 text-center">
-            ✓ Instant digital token • Anti-overbooking protected
-          </p>
-        </div>
-      </form>
-    </div>
+        {/* Submit Button */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleBooking}
+          disabled={bookingLoading || !selectedSlotId}
+          style={[styles.submitButton, (!selectedSlotId || bookingLoading) && styles.submitButtonDisabled]}
+        >
+          {bookingLoading ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <>
+              <Text style={styles.submitButtonText}>
+                {language === 'hi' ? 'पुष्टि करें एवं टोकन प्राप्त करें' : 'Confirm & Generate Token'}
+              </Text>
+              <ArrowRight size={16} color="#ffffff" />
+            </>
+          )}
+        </TouchableOpacity>
+        <Text style={styles.footerGuarantees}>
+          ✓ Instant digital token • Anti-overbooking buffer protected
+        </Text>
+      </View>
+    </ScrollView>
   );
 }
 
 export default function BookSlotPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-xs text-emerald-700">Loading booking wizard...</div>}>
+    <Suspense fallback={<View style={{ padding: 32, alignItems: 'center' }}><ActivityIndicator size="small" color="#047857" /></View>}>
       <BookSlotContent />
     </Suspense>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#ffffff',
+  },
+  content: {
+    paddingBottom: 24,
+    gap: 14,
+  },
+  header: {
+    paddingHorizontal: 4,
+    gap: 2,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#064e3b',
+  },
+  subtitle: {
+    fontSize: 11,
+    color: '#047857',
+  },
+  errorBox: {
+    backgroundColor: '#fee2e2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 14,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  errorText: {
+    color: '#991b1b',
+    fontSize: 11,
+    fontWeight: '700',
+    flex: 1,
+  },
+  formCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    gap: 18,
+    shadowColor: '#064e3b',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  stepSection: {
+    gap: 8,
+  },
+  stepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stepTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stepTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#064e3b',
+  },
+  stepHint: {
+    fontSize: 10,
+    color: '#047857',
+    fontWeight: '600',
+  },
+  centresList: {
+    gap: 8,
+  },
+  centreTile: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    borderRadius: 16,
+    padding: 12,
+    gap: 2,
+    position: 'relative',
+  },
+  centreTileSelected: {
+    borderColor: '#047857',
+    backgroundColor: '#ecfdf5',
+    borderWidth: 2,
+  },
+  bestChoiceBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#fde047',
+    borderRadius: 10,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  bestChoiceText: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#064e3b',
+  },
+  centreTileName: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#064e3b',
+  },
+  centreTileSub: {
+    fontSize: 10,
+    color: '#047857',
+  },
+  centreTileMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  metaItem: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#047857',
+  },
+  bullet: {
+    fontSize: 10,
+    color: '#a7f3d0',
+  },
+  cropSelectorRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  cropChip: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  cropChipSelected: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#047857',
+    borderWidth: 1.5,
+  },
+  cropChipText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#064e3b',
+  },
+  cropChipTextSelected: {
+    fontWeight: '800',
+    color: '#047857',
+  },
+  inputGroup: {
+    gap: 4,
+    marginTop: 4,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#064e3b',
+  },
+  textInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#064e3b',
+  },
+  loadingBox: {
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  loadingText: {
+    fontSize: 11,
+    color: '#047857',
+  },
+  slotsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  slotTile: {
+    flex: 1,
+    minWidth: '45%',
+    borderRadius: 14,
+    padding: 10,
+    borderWidth: 1,
+    gap: 2,
+  },
+  slotTileDefault: {
+    backgroundColor: '#ffffff',
+    borderColor: '#d1fae5',
+  },
+  slotTileSelected: {
+    backgroundColor: '#047857',
+    borderColor: '#047857',
+  },
+  slotTileLimited: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#fde68a',
+  },
+  slotTileFull: {
+    backgroundColor: '#f3f4f6',
+    borderColor: '#e5e7eb',
+    opacity: 0.5,
+  },
+  slotTime: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  slotTimeDefault: {
+    color: '#064e3b',
+  },
+  slotTimeSelected: {
+    color: '#ffffff',
+  },
+  slotWindow: {
+    fontSize: 9,
+  },
+  slotWindowDefault: {
+    color: '#047857',
+  },
+  slotWindowSelected: {
+    color: '#d1fae5',
+  },
+  slotFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  slotStatus: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  slotStatusDefault: {
+    color: '#047857',
+  },
+  slotStatusSelected: {
+    color: '#fde047',
+  },
+  slotSpots: {
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  slotSpotsDefault: {
+    color: '#047857',
+  },
+  slotSpotsSelected: {
+    color: '#ffffff',
+  },
+  submitButton: {
+    backgroundColor: '#047857',
+    borderRadius: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#047857',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonDisabled: {
+    opacity: 0.5,
+  },
+  submitButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  footerGuarantees: {
+    fontSize: 10,
+    color: '#047857',
+    textAlign: 'center',
+  },
+});
