@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet as RNStyleSheet } from 'react-native-web';
+import { View, Text, TouchableOpacity, Image, StyleSheet as RNStyleSheet } from 'react-native-web';
 import Link from 'next/link';
-import { Wheat, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { ProfileModal } from './ProfileModal';
 
 export const MobileHeader: React.FC = () => {
@@ -13,16 +13,15 @@ export const MobileHeader: React.FC = () => {
     <>
       <View style={styles.headerContainer}>
         <View style={styles.headerInner}>
-          {/* Left: Mandi Setu Logo */}
+          {/* Left: Official Mandi Mitra Logo */}
           <Link href="/farmer/dashboard" style={{ textDecoration: 'none' }}>
             <View style={styles.logoRow}>
-              <View style={styles.logoIconBox}>
-                <Wheat size={22} color="#fde047" />
-              </View>
-              <View style={styles.logoTextBox}>
-                <Text style={styles.logoTitle}>MANDI SETU</Text>
-                <Text style={styles.logoSubtitle}>मंडी सेतु • किसान सेवा</Text>
-              </View>
+              <Image
+                source={{ uri: '/images/mandi-mitra-logo.jpg' }}
+                style={styles.headerLogoImage}
+                resizeMode="contain"
+                accessibilityLabel="Mandi Mitra Logo"
+              />
             </View>
           </Link>
 
@@ -55,7 +54,7 @@ const styles = RNStyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#d1fae5',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     shadowColor: '#064e3b',
     shadowOffset: { width: 0, height: 2 },
@@ -77,36 +76,10 @@ const styles = RNStyleSheet.create({
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
-  logoIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: '#047857',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#064e3b',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  logoTextBox: {
-    flexDirection: 'column',
-    justifyContent: 'center',
-  },
-  logoTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#064e3b',
-    letterSpacing: 0.5,
-  },
-  logoSubtitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#047857',
-    letterSpacing: 0.3,
+  headerLogoImage: {
+    width: 140,
+    height: 40,
   },
   profileButton: {
     flexDirection: 'row',

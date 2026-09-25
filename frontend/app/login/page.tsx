@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
+  Image,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
@@ -159,11 +160,12 @@ function LoginContent() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Top: ONLY Logo */}
       <View style={styles.topLogoContainer}>
-        <View style={styles.logoTile}>
-          <Wheat size={36} color="#fde047" />
-        </View>
-        <Text style={styles.brandTitle}>MANDI SETU</Text>
-        <Text style={styles.brandSubtitle}>मंडी सेतु • किसान सेवा</Text>
+        <Image
+          source={{ uri: '/images/mandi-mitra-logo.jpg' }}
+          style={styles.officialLogoImage}
+          resizeMode="contain"
+          accessibilityLabel="Mandi Mitra Official Logo"
+        />
       </View>
 
       {/* Success Notification (e.g. after registration) */}
@@ -465,34 +467,14 @@ const styles = StyleSheet.create({
   },
   topLogoContainer: {
     alignItems: 'center',
-    gap: 4,
-    paddingTop: 8,
+    justifyContent: 'center',
+    paddingTop: 12,
     paddingBottom: 4,
   },
-  logoTile: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: '#047857',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#064e3b',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 6,
-    elevation: 5,
-    marginBottom: 6,
-  },
-  brandTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#064e3b',
-    letterSpacing: 0.8,
-  },
-  brandSubtitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#047857',
+  officialLogoImage: {
+    width: 220,
+    height: 168,
+    alignSelf: 'center',
   },
   successBanner: {
     flexDirection: 'row',

@@ -56,12 +56,21 @@ declare module 'react-native-web' {
     color?: string;
   }
 
+  export interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+    source?: { uri: string } | string;
+    style?: ViewStyle | (ViewStyle | undefined)[] | any;
+    resizeMode?: 'cover' | 'contain' | 'stretch' | 'repeat' | 'center';
+    accessibilityLabel?: string;
+    alt?: string;
+  }
+
   export const View: React.FC<ViewProps>;
   export const Text: React.FC<TextProps>;
   export const TouchableOpacity: React.FC<TouchableOpacityProps>;
   export const TextInput: React.FC<TextInputProps>;
   export const ScrollView: React.FC<ScrollViewProps>;
   export const ActivityIndicator: React.FC<ActivityIndicatorProps>;
+  export const Image: React.FC<ImageProps>;
   export const StyleSheet: {
     create: <T extends Record<string, ViewStyle | TextStyle | any>>(styles: T) => T;
   };
