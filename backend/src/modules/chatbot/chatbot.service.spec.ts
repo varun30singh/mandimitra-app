@@ -74,6 +74,6 @@ describe('ChatbotService - Priority Routing & Multilingual Intent Detection', ()
     const response = await service.processMessage('what is the msp rate of wheat');
     expect(response.source).toBe('knowledge_base');
     expect(response.intent).toBe('MSP_RATES');
-    expect(response.reply).toContain('Wheat: ₹2,275');
+    expect(response.reply).toContain('Wheat: ₹2,585');
   });
 });

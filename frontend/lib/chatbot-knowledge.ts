@@ -255,9 +255,9 @@ export const KNOWLEDGE_BASE: KnowledgeItem[] = [
       /msp/i, /rate/i, /price/i, /भाव/i, /हमीभाव/i, /सरकारी.*दर/i, /minimum.*support/i
     ],
     answers: {
-      en: 'Official 2025-2026 Government MSP Rates (per quintal):\n• Wheat: ₹2,275 - ₹2,425\n• Paddy (Common): ₹2,300 | Grade A: ₹2,320\n• Mustard: ₹5,650 - ₹5,950\n• Soybean: ₹4,892\n• Gram (Chana): ₹5,440\n• Cotton (Medium): ₹7,121 | (Long): ₹7,521\n• Maize: ₹2,225\n• Groundnut: ₹6,783\n• Tur (Arhar): ₹7,550\n• Moong: ₹8,682\n• Urad: ₹7,400',
-      hi: 'वर्ष 2025-2026 के लिए सरकारी न्यूनतम समर्थन मूल्य (MSP प्रति क्विंटल):\n• गेहूँ (Wheat): ₹2,275 - ₹2,425\n• धान (Paddy Common): ₹2,300 | ग्रेड ए: ₹2,320\n• सरसों (Mustard): ₹5,650 - ₹5,950\n• सोयाबीन (Soybean): ₹4,892\n• चना (Gram): ₹5,440\n• कपास (Cotton): ₹7,121 - ₹7,521\n• मक्का (Maize): ₹2,225\n• मूँगफली (Groundnut): ₹6,783\n• तुअर (Arhar): ₹7,550\n• मूँग (Moong): ₹8,682\n• उड़द (Urad): ₹7,400',
-      mr: 'सन २०२५-२०२६ चे शासकीय हमीभाव (MSP प्रति क्विंटल):\n• गहू (Wheat): ₹२,२७५ - ₹२,४२५\n• भात / धान (Paddy): ₹२,३०० | ग्रेड ए: ₹२,३२०\n• मोहरी (Mustard): ₹५,६५० - ₹५,९५०\n• सोयाबीन (Soybean): ₹४,८९२\n• हरभरा / चना (Gram): ₹५,४४०\n• कापूस (Cotton): ₹७,१२१ - ₹७,५२१\n• मका (Maize): ₹२,२२५\n• भुईमूग (Groundnut): ₹६,७८३\n• तूर (Tur): ₹७,५५०\n• मूग (Moong): ₹८,६८२\n• उडीद (Urad): ₹७,४००'
+      en: 'Official 2026-2027 Government MSP Rates (per quintal):\n• Wheat: ₹2,585 (approx. ₹25.85/kg)\n• Soybean (Yellow): ₹5,708 (approx. ₹57.08/kg)\n• Chana / Gram: ₹5,875 (approx. ₹58.75/kg)\n• Onion: No MSP (Open APMC Auction)\n• Paddy (Common): ₹2,300 | Grade A: ₹2,320\n• Mustard: ₹5,650 - ₹5,950\n• Cotton (Medium): ₹7,121 | (Long): ₹7,521\n• Maize: ₹2,225\n• Groundnut: ₹6,783\n• Tur (Arhar): ₹7,550\n• Moong: ₹8,682\n• Urad: ₹7,400',
+      hi: 'वर्ष 2026-2027 के लिए सरकारी न्यूनतम समर्थन मूल्य (MSP प्रति क्विंटल):\n• गेहूँ (Wheat): ₹2,585 (लगभग ₹25.85/किग्रा)\n• सोयाबीन (पीला): ₹5,708 (लगभग ₹57.08/किग्रा)\n• चना / ग्राम: ₹5,875 (लगभग ₹58.75/किग्रा)\n• प्याज (Onion): MSP लागू नहीं (खुली नीलामी)\n• धान (Paddy Common): ₹2,300 | ग्रेड ए: ₹2,320\n• सरसों (Mustard): ₹5,650 - ₹5,950\n• कपास (Cotton): ₹7,121 - ₹7,521\n• मक्का (Maize): ₹2,225\n• मूँगफली (Groundnut): ₹6,783\n• तुअर (Arhar): ₹7,550\n• मूँग (Moong): ₹8,682\n• उड़द (Urad): ₹7,400',
+      mr: 'सन २०२६-२०२७ चे शासकीय हमीभाव (MSP प्रति क्विंटल):\n• गहू (Wheat): ₹२,५८५ (सुमारे ₹२५.८५/किलो)\n• सोयाबीन (पिवळा): ₹५,७०८ (सुमारे ₹५७.०८/किलो)\n• हरभरा / चना (Gram): ₹५,८७५ (सुमारे ₹५८.७५/किलो)\n• कांदा (Onion): हमीभाव नाही (खुल्या लिलावाद्वारे)\n• भात / धान (Paddy): ₹२,३०० | ग्रेड ए: ₹२,३२०\n• मोहरी (Mustard): ₹५,६५० - ₹५,९५०\n• कापूस (Cotton): ₹७,१२१ - ₹७,५२१\n• मका (Maize): ₹२,२२५\n• भुईमूग (Groundnut): ₹६,७८३\n• तूर (Tur): ₹७,५५०\n• मूग (Moong): ₹८,६८२\n• उडीद (Urad): ₹७,४००'
     },
     followUpQuestions: {
       en: [
@@ -292,9 +292,9 @@ export const KNOWLEDGE_BASE: KnowledgeItem[] = [
       /wheat/i, /gehu/i, /गेहूँ/i, /गहू/i
     ],
     answers: {
-      en: 'Wheat MSP is fixed at ₹2,275/quintal (Rabi 2025-26 up to ₹2,425). Fair Average Quality (FAQ) standards require maximum 12% moisture. Grains with 12-14% moisture face a proportional weight deduction of 0.5% per 1% moisture. Wheat above 14% moisture is rejected.',
-      hi: 'गेहूँ का न्यूनतम समर्थन मूल्य ₹2,275 प्रति क्विंटल (रबी 2025-26 हेतु ₹2,425) निर्धारित है। मानक गुणवत्ता (FAQ) के तहत नमी अधिकतम 12% होनी चाहिए। 12% से 14% नमी होने पर 0.5% प्रति प्रतिशत वजन कटौती होती है। 14% से अधिक नमी होने पर माल अस्वीकृत हो सकता है।',
-      mr: 'गव्हाचा हमीभाव ₹२,२७५ प्रति क्विंटल (रब्बी २०२५-२६ साठी ₹२,४२५) आहे. FAQ नियमांनुसार ओलावा कमाल १२% असणे आवश्यक आहे. १२% ते १४% ओलावा असल्यास प्रति टक्क्याला ०.५% कपात होते. १४% पेक्षा जास्त ओलावा असल्यास गहू नाकारला जाऊ शकतो.'
+      en: 'Wheat MSP is fixed at ₹2,585/quintal (approx. ₹25.85/kg). Fair Average Quality (FAQ) standards require maximum 12% moisture. Grains with 12-14% moisture face a proportional weight deduction of 0.5% per 1% moisture. Wheat above 14% moisture is rejected.',
+      hi: 'गेहूँ का न्यूनतम समर्थन मूल्य ₹2,585 प्रति क्विंटल (लगभग ₹25.85/किग्रा) निर्धारित है। मानक गुणवत्ता (FAQ) के तहत नमी अधिकतम 12% होनी चाहिए। 12% से 14% नमी होने पर 0.5% प्रति प्रतिशत वजन कटौती होती है। 14% से अधिक नमी होने पर माल अस्वीकृत हो सकता है।',
+      mr: 'गव्हाचा हमीभाव ₹२,५८५ प्रति क्विंटल (सुमारे ₹२५.८५/किलो) आहे. FAQ नियमांनुसार ओलावा कमाल १२% असणे आवश्यक आहे. १२% ते १४% ओलावा असल्यास प्रति टक्क्याला ०.५% कपात होते. १४% पेक्षा जास्त ओलावा असल्यास गहू नाकारला जाऊ शकतो.'
     },
     followUpQuestions: {
       en: [
@@ -366,9 +366,9 @@ export const KNOWLEDGE_BASE: KnowledgeItem[] = [
       /soybean/i, /soya/i, /सोयाबीन/i
     ],
     answers: {
-      en: 'Soybean MSP is ₹4,892 per quintal. FAQ procurement parameters: Moisture must not exceed 12%. Foreign matter max 2%, damaged/green immature seeds max 3%. Ensure pods are fully dried in sunlight before bringing them to the APMC.',
-      hi: 'सोयाबीन का न्यूनतम समर्थन मूल्य ₹4,892 प्रति क्विंटल है। सरकारी खरीद मानक: नमी 12% से अधिक नहीं होनी चाहिए। कचरा अधिकतम 2% और हरे/अपरिपक्व दाने अधिकतम 3% अनुमन्य हैं। मंडी लाने से पूर्व माल को धूप में अच्छी तरह सुखा लें।',
-      mr: 'सोयाबीनचा हमीभाव ₹४,८९२ प्रति क्विंटल आहे. खरेदी निकष: ओलावा कमाल १२% असावा. काडीकचरा २% व हिरवे/अपरिपक्व दाणे ३% पर्यंत चालतात. केंद्रावर आणण्यापूर्वी सोयाबीन उन्हात नीट वाळवून घ्यावे.'
+      en: 'Soybean (Yellow) MSP is ₹5,708 per quintal (approx. ₹57.08/kg). FAQ procurement parameters: Moisture must not exceed 12%. Foreign matter max 2%, damaged/green immature seeds max 3%. Ensure pods are fully dried in sunlight before bringing them to the APMC.',
+      hi: 'सोयाबीन (पीला) का न्यूनतम समर्थन मूल्य ₹5,708 प्रति क्विंटल (लगभग ₹57.08/किग्रा) है। सरकारी खरीद मानक: नमी 12% से अधिक नहीं होनी चाहिए। कचरा अधिकतम 2% और हरे/अपरिपक्व दाने अधिकतम 3% अनुमन्य हैं। मंडी लाने से पूर्व माल को धूप में अच्छी तरह सुखा लें।',
+      mr: 'सोयाबीनचा (पिवळा) हमीभाव ₹५,७०८ प्रति क्विंटल (सुमारे ₹५७.०८/किलो) आहे. खरेदी निकष: ओलावा कमाल १२% असावा. काडीकचरा २% व हिरवे/अपरिपक्व दाणे ३% पर्यंत चालतात. केंद्रावर आणण्यापूर्वी सोयाबीन उन्हात नीट वाळवून घ्यावे.'
     },
     followUpQuestions: {
       en: [
@@ -440,9 +440,9 @@ export const KNOWLEDGE_BASE: KnowledgeItem[] = [
       /chana/i, /gram/i, /चना/i, /हरभरा/i
     ],
     answers: {
-      en: 'Gram (Chana) MSP is ₹5,440 per quintal. FAQ specification: Moisture limit is 14%. Foreign matter must not exceed 1%, slightly damaged seeds allowed up to 3%, and insect infestation must be zero.',
-      hi: 'चना (Gram) का न्यूनतम समर्थन मूल्य ₹5,440 प्रति क्विंटल है। FAQ मानक: नमी अधिकतम 14% होनी चाहिए। कचरा 1% से कम, मामूली क्षतिग्रस्त दाने अधिकतम 3% और कीट/घुन की मात्रा शून्य होनी चाहिए।',
-      mr: 'हरभऱ्याचा (चना) हमीभाव ₹५,४४० प्रति क्विंटल आहे. खरेदी निकष: ओलावा कमाल १४% असावा. काडीकचरा १% पेक्षा कमी, किडलेले किंवा डागी दाणे ३% पेक्षा कमी असावेत.'
+      en: 'Chana / Gram MSP is ₹5,875 per quintal (approx. ₹58.75/kg). FAQ specification: Moisture limit is 14%. Foreign matter must not exceed 1%, slightly damaged seeds allowed up to 3%, and insect infestation must be zero.',
+      hi: 'चना / ग्राम का न्यूनतम समर्थन मूल्य ₹5,875 प्रति क्विंटल (लगभग ₹58.75/किग्रा) है। FAQ मानक: नमी अधिकतम 14% होनी चाहिए। कचरा 1% से कम, मामूली क्षतिग्रस्त दाने अधिकतम 3% और कीट/घुन की मात्रा शून्य होनी चाहिए।',
+      mr: 'हरभऱ्याचा / चनाचा हमीभाव ₹५,८७५ प्रति क्विंटल (सुमारे ₹५८.७५/किलो) आहे. खरेदी निकष: ओलावा कमाल १४% असावा. काडीकचरा १% पेक्षा कमी, किडलेले किंवा डागी दाणे ३% पेक्षा कमी असावेत.'
     },
     followUpQuestions: {
       en: [

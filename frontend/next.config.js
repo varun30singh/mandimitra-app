@@ -19,12 +19,12 @@ const nextConfig = {
     return [
       {
         source: '/admin/:path*',
-        destination: '/farmer/dashboard',
+        destination: '/operator/dashboard',
         permanent: false,
       },
       {
         source: '/admin',
-        destination: '/farmer/dashboard',
+        destination: '/operator/dashboard',
         permanent: false,
       },
       {

@@ -358,10 +358,10 @@ export default function FarmerDashboard() {
                         onChange={(e) => setBookingCrop(e.target.value)}
                         style={htmlSelectStyle}
                       >
-                        <option value="Wheat">Wheat (MSP: ₹2,275/qtl)</option>
-                        <option value="Onion">Onion (Graded Red)</option>
-                        <option value="Soybean">Soybean (MSP: ₹4,892/qtl)</option>
-                        <option value="Gram">Gram / Chana (MSP: ₹5,440/qtl)</option>
+                        <option value="Wheat">{t('crop_wheat') || 'Wheat (MSP: ₹2,585/qtl • ₹25.85/kg)'}</option>
+                        <option value="Onion">{t('crop_onion') || 'Onion (No MSP)'}</option>
+                        <option value="Soybean">{t('crop_soybean') || 'Soybean (Yellow) (MSP: ₹5,708/qtl • ₹57.08/kg)'}</option>
+                        <option value="Gram">{t('crop_gram') || 'Chana / Gram (MSP: ₹5,875/qtl • ₹58.75/kg)'}</option>
                       </select>
                     </View>
                   </View>

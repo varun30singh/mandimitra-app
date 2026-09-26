@@ -35,11 +35,11 @@ export const SmartRecommendationCard: React.FC<RecommendationCardProps> = ({
       <div className="flex items-center justify-between">
         <span className="bg-emerald-100 text-emerald-900 font-extrabold text-xs uppercase px-3 py-1 rounded-full flex items-center gap-1.5 border border-emerald-200">
           <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-          {language === 'hi' ? 'सर्वश्रेष्ठ अनुशंसित' : (language === 'mr' ? 'सर्वोत्तम शिफारस' : 'RECOMMENDED FOR YOU')}
+          {t('recommended_for_you')}
         </span>
 
         <span className="text-xs font-black text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-          Score: {recommendationScore}/100
+          {t('recommendation_score', { score: recommendationScore })}
         </span>
       </div>
 
@@ -56,30 +56,34 @@ export const SmartRecommendationCard: React.FC<RecommendationCardProps> = ({
         </div>
 
         <div className="text-right shrink-0">
-          <span className="text-2xl font-black text-emerald-800">{metrics.distanceKm} km</span>
-          <span className="text-[10px] text-emerald-600 block">away</span>
+          <span className="text-2xl font-black text-emerald-800">{metrics.distanceKm} {t('km')}</span>
+          <span className="text-[10px] text-emerald-600 block">{t('away')}</span>
         </div>
       </div>
 
       {/* 4 Metric Boxes */}
       <div className="grid grid-cols-2 gap-2 text-center text-xs">
         <div className="bg-emerald-50/60 p-2.5 rounded-2xl border border-emerald-100">
-          <span className="text-[10px] text-emerald-800 font-bold block">Current Queue</span>
-          <span className="text-lg font-black text-emerald-950 mt-0.5 block">{metrics.queueLength} farmers</span>
+          <span className="text-[10px] text-emerald-800 font-bold block">{t('current_queue')}</span>
+          <span className="text-lg font-black text-emerald-950 mt-0.5 block">
+            {t('farmers_count', { count: metrics.queueLength })}
+          </span>
         </div>
 
         <div className="bg-emerald-50/60 p-2.5 rounded-2xl border border-emerald-100">
-          <span className="text-[10px] text-emerald-800 font-bold block">Estimated Wait</span>
-          <span className="text-lg font-black text-emerald-700 mt-0.5 block">~{metrics.estimatedWaitMinutes} min</span>
+          <span className="text-[10px] text-emerald-800 font-bold block">{t('est_wait')}</span>
+          <span className="text-lg font-black text-emerald-700 mt-0.5 block">
+            ~{metrics.estimatedWaitMinutes} {t('min')}
+          </span>
         </div>
 
         <div className="bg-emerald-50/60 p-2.5 rounded-2xl border border-emerald-100">
-          <span className="text-[10px] text-emerald-800 font-bold block">Yard Capacity</span>
+          <span className="text-[10px] text-emerald-800 font-bold block">{t('yard_capacity')}</span>
           <span className="text-lg font-black text-emerald-950 mt-0.5 block">{metrics.capacityUtilization}%</span>
         </div>
 
         <div className="bg-emerald-50/60 p-2.5 rounded-2xl border border-emerald-100">
-          <span className="text-[10px] text-emerald-800 font-bold block">Next Slot</span>
+          <span className="text-[10px] text-emerald-800 font-bold block">{t('next_slot')}</span>
           <span className="text-lg font-black text-emerald-800 mt-0.5 block">{metrics.nextAvailableSlot}</span>
         </div>
       </div>
@@ -110,7 +114,7 @@ export const SmartRecommendationCard: React.FC<RecommendationCardProps> = ({
           href={`/farmer/book?centreId=${centre.id}`}
           className="w-full bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-black py-3 rounded-2xl shadow-xs transition flex items-center justify-center gap-2 text-xs"
         >
-          {language === 'hi' ? 'इस केंद्र पर स्लॉट बुक करें' : 'Book Recommended Slot'}
+          {t('book_recommended_slot')}
           <ArrowRight className="w-4 h-4" />
         </Link>
       )}

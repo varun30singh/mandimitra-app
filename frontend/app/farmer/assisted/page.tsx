@@ -233,10 +233,10 @@ export default function AssistedKioskPage() {
                   onChange={(e) => setCrop(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm"
                 >
-                  <option value="Wheat">Wheat / गेहूँ (MSP ₹2,275)</option>
-                  <option value="Onion">Onion / प्याज (Graded Red)</option>
-                  <option value="Soybean">Soybean / सोयाबीन</option>
-                  <option value="Gram">Gram / चना</option>
+                  <option value="Wheat">Wheat / गेहूँ (MSP: ₹2,585/qtl • ₹25.85/kg)</option>
+                  <option value="Onion">Onion / प्याज (No MSP)</option>
+                  <option value="Soybean">Soybean (Yellow) / सोयाबीन (MSP: ₹5,708/qtl • ₹57.08/kg)</option>
+                  <option value="Gram">Chana / Gram / चना (MSP: ₹5,875/qtl • ₹58.75/kg)</option>
                 </select>
               </div>
 

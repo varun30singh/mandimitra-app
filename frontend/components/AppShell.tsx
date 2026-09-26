@@ -18,21 +18,23 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     );
   }
 
+  const isFarmerPage = pathname.startsWith('/farmer');
+
   return (
     <>
-      {/* Top Mobile Header: Shown only when inside the farmer app */}
+      {/* Top Mobile Header */}
       <MobileHeader />
 
       {/* Main Mobile App Container */}
-      <main className="flex-1 w-full max-w-md mx-auto bg-white px-3 sm:px-4 py-4 pb-24">
+      <main className={`flex-1 w-full max-w-md mx-auto bg-white px-3 sm:px-4 py-4 ${isFarmerPage ? 'pb-24' : 'pb-8'}`}>
         {children}
       </main>
 
-      {/* Floating AI Chatbot Assistant: Shown only inside the farmer app */}
-      <ChatbotBubble />
+      {/* Floating AI Chatbot Assistant: Shown on farmer routes */}
+      {isFarmerPage && <ChatbotBubble />}
 
       {/* 5-Button Bottom Navigation Bar: Shown only inside the farmer app */}
-      <MobileBottomNav />
+      {isFarmerPage && <MobileBottomNav />}
     </>
   );
 };

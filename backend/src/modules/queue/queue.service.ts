@@ -384,7 +384,12 @@ export class QueueService {
     // Create or complete Procurement & Payment records
     const crop = token.booking?.crop || 'Wheat';
     const quantity = procurementData?.quantity || token.booking?.quantity || 50.0;
-    const rate = procurementData?.ratePerQuintal || (crop === 'Wheat' ? 2275.0 : 2250.0);
+    const cropRateMap: Record<string, number> = {
+      Wheat: 2585.0,
+      Soybean: 5708.0,
+      Gram: 5875.0,
+    };
+    const rate = procurementData?.ratePerQuintal || cropRateMap[crop] || 2585.0;
     const totalAmount = parseFloat((quantity * rate).toFixed(2));
 
     const procurement = await this.prisma.procurement.upsert({

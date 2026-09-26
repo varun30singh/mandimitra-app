@@ -259,11 +259,11 @@ export class ChatbotService {
     if (intent === 'MSP_RATES') {
       let reply = '';
       if (lang === 'hi') {
-        reply = 'सरकारी न्यूनतम समर्थन मूल्य (MSP) 2026-27:\n• गेहूँ (Wheat): ₹2,275 प्रति क्विंटल\n• प्याज (Onion): ₹2,250 - ₹2,600 (गुणवत्ता अनुसार)\n• सोयाबीन (Soybean): ₹4,892 प्रति क्विंटल\n• चना (Gram): ₹5,440 प्रति क्विंटल\n• धान (Paddy Common): ₹2,300 प्रति क्विंटल।';
+        reply = 'सरकारी न्यूनतम समर्थन मूल्य (MSP) 2026-27:\n• गेहूँ (Wheat): ₹2,585 प्रति क्विंटल (लगभग ₹25.85/किग्रा)\n• प्याज (Onion): MSP लागू नहीं (खुली नीलामी)\n• सोयाबीन (Soybean Yellow): ₹5,708 प्रति क्विंटल (लगभग ₹57.08/किग्रा)\n• चना (Gram / Chana): ₹5,875 प्रति क्विंटल (लगभग ₹58.75/किग्रा)\n• धान (Paddy Common): ₹2,300 प्रति क्विंटल।';
       } else if (lang === 'mr') {
-        reply = 'शासकीय हमीभाव (MSP) 2026-27:\n• गहू (Wheat): ₹2,275 प्रति क्विंटल\n• कांदा (Onion): ₹2,250 - ₹2,600 (प्रतीनुसार)\n• सोयाबीन (Soybean): ₹4,892 प्रति क्विंटल\n• हरभरा (Gram): ₹5,440 प्रति क्विंटल\n• भात/धान (Paddy): ₹2,300 प्रति क्विंटल.';
+        reply = 'शासकीय हमीभाव (MSP) 2026-27:\n• गहू (Wheat): ₹२,५८५ प्रति क्विंटल (सुमारे ₹२५.८५/किलो)\n• कांदा (Onion): हमीभाव नाही (खुल्या लिलावाद्वारे)\n• सोयाबीन (Soybean Yellow): ₹५,७०८ प्रति क्विंटल (सुमारे ₹५७.०८/किलो)\n• हरभरा / चना (Gram): ₹५,८७५ प्रति क्विंटल (सुमारे ₹५८.७५/किलो)\n• भात/धान (Paddy): ₹२,३०० प्रति क्विंटल.';
       } else {
-        reply = 'Government Minimum Support Prices (MSP) 2026-27:\n• Wheat: ₹2,275 / quintal\n• Onion: ₹2,250 - ₹2,600 / quintal (Graded)\n• Soybean: ₹4,892 / quintal\n• Gram (Chana): ₹5,440 / quintal\n• Paddy (Common): ₹2,300 / quintal.';
+        reply = 'Government Minimum Support Prices (MSP) 2026-27:\n• Wheat: ₹2,585 / quintal (~₹25.85 / kg)\n• Onion: No MSP (Open APMC Auction)\n• Soybean (Yellow): ₹5,708 / quintal (~₹57.08 / kg)\n• Gram / Chana: ₹5,875 / quintal (~₹58.75 / kg)\n• Paddy (Common): ₹2,300 / quintal.';
       }
 
       return { reply, language: lang, intent, source: 'knowledge_base' };

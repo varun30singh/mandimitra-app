@@ -310,8 +310,8 @@ model Procurement {
   grade                String            @default("Grade A")
   moistureContent      Float             @default(11.5)
   bagCount             Int               @default(25)
-  ratePerQuintal       Float             @default(2275.0)
-  totalAmount          Float             @default(56875.0)
+  ratePerQuintal       Float             @default(2585.0)
+  totalAmount          Float             @default(64625.0)
   status               ProcurementStatus @default(PENDING)
   arrivalTime          DateTime?
   processingStart      DateTime?

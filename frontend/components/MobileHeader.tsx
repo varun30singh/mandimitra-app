@@ -9,12 +9,28 @@ import { ProfileModal } from './ProfileModal';
 export const MobileHeader: React.FC = () => {
   const [profileOpen, setProfileOpen] = useState(false);
 
+  const [logoHref, setLogoHref] = useState('/farmer/dashboard');
+
+  React.useEffect(() => {
+    try {
+      const uStr = localStorage.getItem('mandimitra_user');
+      if (uStr) {
+        const u = JSON.parse(uStr);
+        const r = String(u.role || '').toLowerCase();
+        if (r === 'operator' || r === 'admin') setLogoHref('/operator/dashboard');
+        else if (r === 'stockist') setLogoHref('/stockist/dashboard');
+        else if (r === 'broker') setLogoHref('/broker/dashboard');
+        else if (r === 'buyer') setLogoHref('/buyer/dashboard');
+      }
+    } catch {}
+  }, []);
+
   return (
     <>
       <View style={styles.headerContainer}>
         <View style={styles.headerInner}>
           {/* Left: Official Mandi Mitra Logo */}
-          <Link href="/farmer/dashboard" style={{ textDecoration: 'none' }}>
+          <Link href={logoHref} style={{ textDecoration: 'none' }}>
             <View style={styles.logoRow}>
               <Image
                 source={{ uri: '/images/mandi-mitra-logo.jpg' }}

@@ -76,7 +76,7 @@ export const Navbar: React.FC = () => {
               !isAdmin ? 'bg-white text-emerald-900 shadow-xs' : 'text-emerald-100 hover:bg-emerald-700'
             }`}
           >
-            👨‍🌾 Farmer (Ramesh)
+            Farmer (Ramesh)
           </Link>
           <Link
             href="/admin/queue"
@@ -84,7 +84,7 @@ export const Navbar: React.FC = () => {
               pathname === '/admin/queue' ? 'bg-white text-emerald-900 shadow-xs' : 'text-emerald-100 hover:bg-emerald-700'
             }`}
           >
-            📋 Mandi Operator
+            Mandi Operator
           </Link>
           <Link
             href="/admin/dashboard"
@@ -92,7 +92,7 @@ export const Navbar: React.FC = () => {
               isAdmin && pathname !== '/admin/queue' ? 'bg-white text-emerald-900 shadow-xs' : 'text-emerald-100 hover:bg-emerald-700'
             }`}
           >
-            🏛️ District Admin
+            District Admin
           </Link>
           <Link
             href="/ivr-simulator"

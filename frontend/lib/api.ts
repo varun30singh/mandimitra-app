@@ -869,8 +869,9 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       const buyerId = Number(body.buyerId) || 201;
       const brokerId = Number(body.brokerId) || 301;
       const quantity = Number(body.quantity) || 20;
-      const amount = Number(body.amount) || Math.round(quantity * 2275);
       const crop = body.crop || 'Wheat';
+      const cropFallbackRate = crop === 'Soybean' ? 5708 : crop === 'Gram' ? 5875 : 2585;
+      const amount = Number(body.amount) || Math.round(quantity * cropFallbackRate);
       const status = body.status || 'PENDING';
       const farmerName = body.farmerName || 'Ramesh Singh';
       const centreName = body.centreName || 'Meerut Grain Mandi #14';
@@ -970,15 +971,18 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
         const idStr = String(ord.id);
         seenIds.add(idStr);
         const m = meta[idStr] || {};
-        return {
-          id: ord.id,
-          listingId: ord.listingId ?? m.listingId ?? (100 + (ord.id % 10)),
-          buyerId: ord.buyerId ?? m.buyerId ?? (200 + (ord.id % 5)),
-          brokerId: ord.brokerId ?? m.brokerId ?? (300 + (ord.id % 3)),
-          quantity: ord.quantity ?? m.quantity ?? (15 + ((ord.id * 7) % 40)),
-          amount: ord.amount ?? m.amount ?? (Math.round((ord.quantity ?? m.quantity ?? 25) * 2275)),
-          crop: m.crop || ord.crop || (ord.id % 3 === 0 ? 'Paddy' : ord.id % 2 === 0 ? 'Mustard' : 'Wheat'),
-          status: ord.status || m.status || 'PENDING',
+          const resolvedCrop = m.crop || ord.crop || (ord.id % 3 === 0 ? 'Paddy' : ord.id % 2 === 0 ? 'Mustard' : 'Wheat');
+          const resolvedRate = resolvedCrop === 'Soybean' ? 5708 : resolvedCrop === 'Gram' ? 5875 : 2585;
+          const resolvedQty = ord.quantity ?? m.quantity ?? (15 + ((ord.id * 7) % 40));
+          return {
+            id: ord.id,
+            listingId: ord.listingId ?? m.listingId ?? (100 + (ord.id % 10)),
+            buyerId: ord.buyerId ?? m.buyerId ?? (200 + (ord.id % 5)),
+            brokerId: ord.brokerId ?? m.brokerId ?? (300 + (ord.id % 3)),
+            quantity: resolvedQty,
+            amount: ord.amount ?? m.amount ?? Math.round(resolvedQty * resolvedRate),
+            crop: resolvedCrop,
+            status: ord.status || m.status || 'PENDING',
           farmerName: m.farmerName || 'Ramesh Singh',
           centreName: m.centreName || 'Meerut Grain Mandi #14',
           createdAt: ord.createdAt || m.createdAt || new Date().toISOString(),
@@ -1015,27 +1019,32 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
   if (cleanEndpoint.startsWith('/procurement/farmer') || cleanEndpoint === '/procurement') {
     try {
       const orders = await fetchApi<any[]>('/orders');
-      if (Array.isArray(orders)) {
-        return orders.map((o: any) => ({
-          id: o.id,
-          procurementNumber: `MM-ORD-00${o.id}`,
-          crop: o.crop || 'Wheat',
-          quantity: o.quantity || 25,
-          totalAmount: o.amount || Math.round((o.quantity || 25) * 2275),
-          ratePerQuintal: Math.round((o.amount || Math.round((o.quantity || 25) * 2275)) / (o.quantity || 25)),
-          grade: 'FAQ Grade-A',
-          moistureContent: 11.8,
-          status: o.status || 'COMPLETED',
-          centre: {
-            id: 'centre-14',
-            name: o.centreName || 'Meerut Grain Mandi #14',
-          },
-          buyerId: o.buyerId,
-          brokerId: o.brokerId,
-          listingId: o.listingId,
-          createdAt: o.createdAt,
-        })) as unknown as T;
-      }
+      const orderList = Array.isArray(orders) ? orders : [];
+      return orderList.map((o: any) => {
+          const itemCrop = o.crop || 'Wheat';
+          const itemRate = itemCrop === 'Soybean' ? 5708 : itemCrop === 'Gram' ? 5875 : 2585;
+          const itemQty = o.quantity || 25;
+          const calculatedTotal = o.amount || Math.round(itemQty * itemRate);
+          return {
+            id: o.id,
+            procurementNumber: `MM-ORD-00${o.id}`,
+            crop: itemCrop,
+            quantity: itemQty,
+            totalAmount: calculatedTotal,
+            ratePerQuintal: Math.round(calculatedTotal / itemQty),
+            grade: 'FAQ Grade-A',
+            moistureContent: 11.8,
+            status: o.status || 'COMPLETED',
+            centre: {
+              id: 'centre-14',
+              name: o.centreName || 'Meerut Grain Mandi #14',
+            },
+            buyerId: o.buyerId,
+            brokerId: o.brokerId,
+            listingId: o.listingId,
+            createdAt: o.createdAt,
+          };
+        }) as unknown as T;
     } catch (e) {
       console.warn('Error fetching procurement through orders:', e);
     }
